@@ -1,0 +1,8 @@
+#!/bin/bash
+# Reset all split ratios in the current workspace to equal (50/50)
+ws=$(hyprctl activeworkspace -j | jq '.id')
+windows=$(hyprctl clients -j | jq -r --argjson ws "$ws" '.[] | select(.workspace.id == $ws) | .address')
+for addr in $windows; do
+    hyprctl dispatch focuswindow "address:$addr" 2>/dev/null
+    hyprctl dispatch layoutmsg resetsplit 2>/dev/null
+done

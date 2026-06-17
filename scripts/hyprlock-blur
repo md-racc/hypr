@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+# Run Hyprlock (screenshot capture handled natively via path = screenshot in hyprlock.conf)
+exec hyprlock

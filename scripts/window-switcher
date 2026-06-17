@@ -1,0 +1,8 @@
+#!/bin/bash
+CHOICE=$(hyprctl clients -j | jq -r '.[] | "\(.class): \(.title)"' | fuzzel --dmenu)
+[ -z "$CHOICE" ] && exit
+
+ADDR=$(hyprctl clients -j | jq -r --arg c "$CHOICE" \
+  '.[] | select((.class + ": " + .title) == $c) | .address' | head -1)
+
+[ -n "$ADDR" ] && hyprctl dispatch focuswindow "address:$ADDR"

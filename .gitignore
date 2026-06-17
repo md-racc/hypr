@@ -1,0 +1,16 @@
+# Backups
+*.bak
+*.bak.*
+
+# Unused / superseded
+hyprpaper.conf
+
+# Editor artifacts
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# OS
+.DS_Store

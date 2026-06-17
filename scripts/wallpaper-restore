@@ -1,0 +1,12 @@
+#!/bin/sh
+# Restore the last wallust wallpaper via swaybg on session start.
+# Called from hyprland autostart.
+
+CACHE="$HOME/.cache/wallust/wallpaper"
+[ -f "$CACHE" ] || exit 0
+
+WALLPAPER=$(cat "$CACHE")
+[ -f "$WALLPAPER" ] || exit 0
+
+pkill swaybg 2>/dev/null
+swaybg -i "$WALLPAPER" -m fill &

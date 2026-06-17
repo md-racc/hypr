@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Detect compositor
+if [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
+  COMPOSITOR="hyprland"
+elif [ -n "$SWAYSOCK" ]; then
+  COMPOSITOR="sway"
+else
+  COMPOSITOR="unknown"
+fi
+
+CHOICE="$(printf '%s\n' Shutdown Reboot Suspend Logout Lock \
+  | tofi -c ~/.config/tofi/pwrconfig --prompt-text 'Power: ')"
+
+case "$CHOICE" in
+  Shutdown) systemctl poweroff ;;
+  Reboot)   systemctl reboot ;;
+  Suspend)  systemctl suspend ;;
+  Logout)
+    case "$COMPOSITOR" in
+      hyprland) hyprctl dispatch exit ;;
+      sway)     swaymsg exit ;;
+      *)        loginctl terminate-session "$XDG_SESSION_ID" ;;
+    esac ;;
+  Lock)
+    case "$COMPOSITOR" in
+      hyprland) ~/.config/hypr/scripts/hyprlock-blur ;;
+      sway)     swaylock -f ;;
+      *)        loginctl lock-session ;;
+    esac ;;
+esac

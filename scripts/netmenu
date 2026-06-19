@@ -1,0 +1,6 @@
+#!/bin/bash
+CHOICE=$(printf "Wi-Fi\nBluetooth" | fuzzel --dmenu --prompt "Network: " --lines 2)
+case "$CHOICE" in
+    Wi-Fi)     networkmanager_dmenu ;;
+    Bluetooth) bzmenu --launcher custom --launcher-command "fuzzel --dmenu --width 32" ;;
+esac

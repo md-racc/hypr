@@ -2,8 +2,13 @@
 *.bak
 *.bak.*
 
-# Unused / superseded
-hyprpaper.conf
+# Superseded root-level configs (now in conf/machines/)
+/hyprpaper.conf
+/hypridle.conf
+/hyprlock.conf
+
+# Claude
+scripts/.claude/
 
 # Editor artifacts
 *.swp

@@ -7,6 +7,9 @@
 /hypridle.conf
 /hyprlock.conf
 
+# Per-device symlink (points to conf/machines/<hostname>/)
+conf/machine
+
 # Claude
 scripts/.claude/
 

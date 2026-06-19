@@ -1,0 +1,23 @@
+#!/bin/bash
+# Usage: screenshot <mode> <dest>
+#   mode: area | active
+#   dest: clip | file
+
+set -o pipefail
+
+MODE=$1
+DEST=$2
+SAVEDIR=~/documents/pictures/screenshots
+
+case "$DEST" in
+  clip)
+    grimblast --freeze save "$MODE" - | wl-copy && \
+      notify-send "Screenshot" "${MODE^} copied to clipboard"
+    ;;
+  file)
+    f="$SAVEDIR/$(date +"%Y-%m-%d_%H-%M-%S").png"
+    grimblast --freeze copysave "$MODE" "$f" || exit 1
+    echo "$f" > /tmp/last-screenshot
+    notify-send "Screenshot" "${MODE^} saved to $f"
+    ;;
+esac

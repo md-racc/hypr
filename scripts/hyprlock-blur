@@ -6,4 +6,4 @@ if hyprctl monitors | grep -q 'eDP-1'; then
     hyprshot -m output -m eDP-1 -o /tmp -f hyprlock-eDP-1.png -s 2>/dev/null || true
 fi
 
-exec hyprlock --config ~/.config/hypr/conf/machines/$(hostname)/hyprlock.conf
+exec hyprlock --config ~/.config/hypr/conf/machine/hyprlock.conf

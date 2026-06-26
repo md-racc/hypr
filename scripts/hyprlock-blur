@@ -3,7 +3,7 @@
 # On laptops with eDP-1, pre-capture a screenshot for hyprlock's blurred background.
 # On desktop, hyprlock uses path = screenshot natively so no pre-capture is needed.
 if hyprctl monitors | grep -q 'eDP-1'; then
-    hyprshot -m output -m eDP-1 -o /tmp -f hyprlock-eDP-1.png -s 2>/dev/null || true
+    grim -o eDP-1 /tmp/hyprlock-eDP-1.png 2>/dev/null || true
 fi
 
 exec hyprlock --config ~/.config/hypr/conf/machine/hyprlock.conf

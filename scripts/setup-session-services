@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Idempotent per-machine setup for the systemd-managed session daemons.
+# See docs/systemd-session.md. Safe to rerun after adding units.
+set -euo pipefail
+
+repo=$(cd "$(dirname "$0")/.." && pwd)
+
+# Custom target: linked (no [Install] section), started by autostart.
+systemctl --user link --force "$repo/systemd/hyprland-session.target"
+
+# Repo units: enable by absolute path so symlinks point into the repo.
+systemctl --user enable --force \
+  "$repo/systemd/cliphist-text.service" \
+  "$repo/systemd/cliphist-image.service" \
+  "$repo/systemd/nextcloud-client.service"
+
+# Package-shipped units.
+systemctl --user enable fnott.service hypridle.service hyprpolkitagent.service
+
+if command -v hyprsunset >/dev/null; then
+    systemctl --user enable hyprsunset.service
+else
+    echo "WARNING: hyprsunset not installed — skipping (sudo pacman -S hyprsunset)" >&2
+fi
+
+systemctl --user daemon-reload
+echo "done — relogin, or follow the live-takeover steps in docs/systemd-session.md"

@@ -11,7 +11,7 @@ SAVEDIR=~/documents/pictures/screenshots
 
 case "$DEST" in
   clip)
-    grimblast --freeze save "$MODE" - | wl-copy && \
+    grimblast --freeze copy "$MODE" && \
       notify-send "Screenshot" "${MODE^} copied to clipboard"
     ;;
   file)

@@ -48,6 +48,8 @@ everything lives under `conf/`.
 - Commits: conventional style (`feat:`/`fix:`/`chore:`), one logical change
   each, **always pass explicit pathspecs to `git commit`** — the index may
   hold staged deletions that a bare commit would swallow.
+- `KEYBINDS.md` is the human-readable bind reference — any commit that
+  changes keybinds must update it in the same commit.
 - Remote is `gitea.lan`; push only when asked.
 
 ## Known state / pending

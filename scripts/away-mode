@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Away mode: lock the session and cut the displays while keeping
+# processes and network alive — for long-running work (compiles,
+# claude code) that shouldn't die with the monitors. A sleep-blocking
+# inhibitor is held for as long as the lock lasts, so hypridle's
+# suspend timer is refused by logind; unlocking releases everything.
+# Any key/mouse input wakes the displays to the lock prompt.
+set -euo pipefail
+
+# Lock first — hyprlock's screenshot background needs live outputs.
+loginctl lock-session
+sleep 0.5
+hyprctl dispatch dpms off
+
+# Hold the inhibitor until hyprlock exits (waits up to 10s for it to
+# appear so the lock/inhibit race can't drop the lock early).
+systemd-inhibit --what=sleep --who="away-mode" \
+    --why="long-running work with monitors off" \
+    bash -c '
+        for _ in $(seq 50); do pidof hyprlock >/dev/null && break; sleep 0.2; done
+        while pidof hyprlock >/dev/null; do sleep 5; done
+    ' &>/dev/null &

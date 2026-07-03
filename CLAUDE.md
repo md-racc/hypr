@@ -55,6 +55,6 @@ everything lives under `conf/`.
 ## Known state / pending
 
 - Night light: `hyprsunset.conf` steps 6200K→4500K, 20:00–20:30 (GNV sunset).
-- Known-broken, fix pending: playerctl not installed (media keys dead) —
-  needs `sudo pacman -S playerctl` on both machines.
+- Known-broken: nothing on zion. rocinante needs `pacman -S playerctl
+  hyprsunset` on its next visit (media keys / night light until then).
 - Queued: Lua config migration (hyprlang deprecated as of Hyprland 0.55).

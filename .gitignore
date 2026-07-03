@@ -3,8 +3,9 @@
 *.bak.*
 
 # Superseded root-level configs (now in conf/machines/)
+# NOTE: /hypridle.conf is tracked again — it's a symlink to
+# conf/machine/hypridle.conf; hypridle crashes if the default is missing
 /hyprpaper.conf
-/hypridle.conf
 /hyprlock.conf
 
 # Per-device symlink (points to conf/machines/<hostname>/)

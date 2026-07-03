@@ -55,9 +55,6 @@ everything lives under `conf/`.
 ## Known state / pending
 
 - Night light: `hyprsunset.conf` steps 6200K→4500K, 20:00–20:30 (GNV sunset).
-- Known-broken, fix pending: zion hypridle `inhibitor` blocks are invalid
-  syntax (ignored); suspend does not lock first (no `before_sleep_cmd`);
-  `scripts/resetsplits` uses a nonexistent layoutmsg; zion hyprlock avatar
-  path is dead; `scripts/window-switcher` picks wrong window on duplicate
-  titles; playerctl not installed (media keys dead).
+- Known-broken, fix pending: playerctl not installed (media keys dead) —
+  needs `sudo pacman -S playerctl` on both machines.
 - Queued: Lua config migration (hyprlang deprecated as of Hyprland 0.55).

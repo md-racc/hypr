@@ -1,8 +1,12 @@
-#!/bin/bash
-CHOICE=$(hyprctl clients -j | jq -r '.[] | "\(.class): \(.title)"' | fuzzel --dmenu)
-[ -z "$CHOICE" ] && exit
+#!/usr/bin/env bash
+# Focus a window picked from a fuzzel list. Uses a single clients
+# snapshot and fuzzel --index so duplicate class/title lines still
+# resolve to the window that was actually selected.
+set -euo pipefail
 
-ADDR=$(hyprctl clients -j | jq -r --arg c "$CHOICE" \
-  '.[] | select((.class + ": " + .title) == $c) | .address' | head -1)
+clients=$(hyprctl clients -j)
+idx=$(jq -r '.[] | "\(.class): \(.title)"' <<<"$clients" | fuzzel --dmenu --index) || exit 0
+[ -z "$idx" ] && exit 0
 
-[ -n "$ADDR" ] && hyprctl dispatch focuswindow "address:$ADDR"
+addr=$(jq -r --argjson i "$idx" '.[$i].address' <<<"$clients")
+[ -n "$addr" ] && hyprctl dispatch focuswindow "address:$addr"

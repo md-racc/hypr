@@ -48,7 +48,6 @@ Same keys, per-machine meaning. Defined in `conf/machine/keybinds.conf`.
 | `SUPER+O` | Notes (`obsidian`) | same |
 | `SUPER+C` | Calculator (`qalculate-gtk`) | Network menu (`netmenu`) |
 | `SUPER+Z` | — | Toggle eww bar |
-| `SUPER+SHIFT+E` | Reset splits (**broken**, fix pending) | — |
 | `ALT+BrightnessUp/Down` | — | Keyboard backlight ±1 |
 
 ---
@@ -62,6 +61,7 @@ Same keys, per-machine meaning. Defined in `conf/machine/keybinds.conf`.
 | `SUPER+Space` | Toggle floating |
 | `SUPER+S` | Toggle split axis (side-by-side ↔ stacked) |
 | `SUPER+SHIFT+S` | Rotate split 90° (windows carried around the rotation) |
+| `SUPER+SHIFT+E` | Reset all splits on workspace to even (dwindle-calculated sizes) |
 | `SUPER+SHIFT+C` | Reload Hyprland config |
 
 `SUPER+S` flips the axis but keeps window order; `SUPER+SHIFT+S` moves the

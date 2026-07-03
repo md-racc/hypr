@@ -1,8 +1,20 @@
-#!/bin/bash
-# Reset all split ratios in the current workspace to equal (50/50)
-ws=$(hyprctl activeworkspace -j | jq '.id')
-windows=$(hyprctl clients -j | jq -r --argjson ws "$ws" '.[] | select(.workspace.id == $ws) | .address')
-for addr in $windows; do
-    hyprctl dispatch focuswindow "address:$addr" 2>/dev/null
-    hyprctl dispatch layoutmsg resetsplit 2>/dev/null
-done
+#!/usr/bin/env bash
+# Reset every dwindle split on the active workspace to even (ratio 1.0),
+# i.e. force all windows back to their dwindle-calculated sizes.
+# layoutmsg splitratio acts on the focused window's split, so visit each
+# tiled window in one hyprctl batch, then restore the original focus.
+set -euo pipefail
+
+ws=$(hyprctl activeworkspace -j | jq -r '.id')
+orig=$(hyprctl activewindow -j 2>/dev/null | jq -r '.address // empty' || true)
+
+batch=""
+while read -r addr; do
+    batch+="dispatch focuswindow address:$addr ; dispatch layoutmsg splitratio 1.0 exact ; "
+done < <(hyprctl clients -j |
+    jq -r --argjson ws "$ws" \
+       '.[] | select(.workspace.id == $ws and .floating == false) | .address')
+
+[ -n "$orig" ] && batch+="dispatch focuswindow address:$orig"
+batch="${batch% ; }"
+[ -n "$batch" ] && hyprctl --batch "$batch" >/dev/null

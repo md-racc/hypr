@@ -11,8 +11,11 @@ SAVEDIR=~/documents/pictures/screenshots
 
 case "$DEST" in
   clip)
-    grimblast --freeze copy "$MODE" && \
-      notify-send "Screenshot" "${MODE^} copied to clipboard"
+    # save a /tmp copy too so SUPER+N annotation works on clip shots
+    f="/tmp/screenshot-$(date +"%Y-%m-%d_%H-%M-%S").png"
+    grimblast --freeze copysave "$MODE" "$f" || exit 1
+    echo "$f" > /tmp/last-screenshot
+    notify-send "Screenshot" "${MODE^} copied to clipboard"
     ;;
   file)
     f="$SAVEDIR/$(date +"%Y-%m-%d_%H-%M-%S").png"

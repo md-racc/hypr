@@ -16,7 +16,6 @@
 - [Special Workspace (Scratchpad)](#special-workspace-scratchpad)
 - [Mouse](#mouse)
 - [Screenshots](#screenshots)
-- [Notifications — `SUPER+N`](#notifications--supern)
 - [Power — `SUPER+X`](#power--superx)
 - [Session](#session)
 - [Volume & Media](#volume--media)
@@ -143,21 +142,11 @@ grimblast under the hood; area mode = drag-select a region.
 | `SHIFT+Print` | Active window → clipboard |
 | `SUPER+Print` | Area → file (`~/documents/pictures/screenshots/`) |
 | `SUPER+SHIFT+Print` | Active window → file |
+| `SUPER+N` | Annotate last screenshot in `satty` (clip or file mode) |
 
-File mode remembers the last shot for `SUPER+N A` annotation.
-
----
-
-## Notifications — `SUPER+N`
-
-Tap `SUPER+N`, then one key (submap exits after each action).
-
-| Key | Action |
-|-----|--------|
-| `A` | Annotate last screenshot in `satty` |
-| `D` | Dismiss newest notification |
-| `SHIFT+D` | Dismiss all notifications |
-| `Esc` / any other key | Exit |
+Every screenshot records its path (clip shots save a `/tmp` copy), so
+`SUPER+N` annotates the most recent shot of either kind. Silent no-op
+until a screenshot has been taken this boot.
 
 ---
 

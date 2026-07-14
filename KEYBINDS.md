@@ -164,6 +164,15 @@ Tap `SUPER+X`, **keep SUPER held**, then one key.
 | `SUPER+O` | Exit Hyprland session (clean, via `session-exit`) |
 | `Esc` / any other key | Exit submap |
 
+### From the lock screen
+
+Submaps can't be entered while locked. Use these direct binds instead:
+
+| Key | Action |
+|-----|--------|
+| `SUPER+SHIFT+P` | Power off |
+| `SUPER+SHIFT+R` | Reboot |
+
 ---
 
 ## Session

@@ -75,7 +75,7 @@ Vim keys. Plain = focus, SHIFT = move window.
 | Key | Action |
 |-----|--------|
 | `SUPER+H/J/K/L` | Focus left / down / up / right |
-| `SUPER+SHIFT+H/J/K/L` | Move window left / down / up / right |
+| `SUPER+SHIFT+H/J/K/L` | Move window left / down / up / right (H/L cross to adjacent workspace at edge) |
 
 ---
 

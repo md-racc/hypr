@@ -1,0 +1,19 @@
+#!/bin/bash
+# Move the focused window in a direction.
+# If the window is at the layout edge (position unchanged after movewindow),
+# cross to the adjacent workspace for horizontal directions.
+# Usage: movewindow <l|r|u|d>
+
+dir=$1
+[ -n "$dir" ] || { echo "usage: movewindow <l|r|u|d>" >&2; exit 1; }
+
+pos_before=$(hyprctl activewindow -j | jq -r '.at | @csv')
+hyprctl dispatch movewindow "$dir"
+pos_after=$(hyprctl activewindow -j | jq -r '.at | @csv')
+
+if [[ "$pos_before" == "$pos_after" ]]; then
+    case "$dir" in
+        l) hyprctl dispatch movetoworkspace -1 ;;
+        r) hyprctl dispatch movetoworkspace +1 ;;
+    esac
+fi

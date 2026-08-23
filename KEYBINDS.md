@@ -143,10 +143,18 @@ grimblast under the hood; area mode = drag-select a region.
 | `SUPER+Print` | Area → file (`~/documents/pictures/screenshots/`) |
 | `SUPER+SHIFT+Print` | Active window → file |
 | `SUPER+N` | Annotate last screenshot in `satty` (clip or file mode) |
+| `SUPER+G` | OCR the clipboard image (`textgrab`), copy extracted text |
 
 Every screenshot records its path (clip shots save a `/tmp` copy), so
 `SUPER+N` annotates the most recent shot of either kind. Silent no-op
 until a screenshot has been taken this boot.
+
+`SUPER+G` runs [`textgrab`](https://gitea.lan/mdracc/textgrab) with no
+arguments, which reads whatever image is currently on the clipboard —
+in practice, the last screenshot taken with `Print`/`SHIFT+Print`. A
+window opens over the image; drag-select a region to OCR it and copy
+the text, or press `a` to OCR the whole image. A notification shows a
+preview of what was copied.
 
 ---
 

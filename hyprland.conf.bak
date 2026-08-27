@@ -9,5 +9,5 @@ source = ~/.config/hypr/conf/machine/keybinds.conf
 source = ~/.config/hypr/conf/rules.conf
 
 xwayland {
-  enabled = false
+  enabled = true 
 }

@@ -24,6 +24,18 @@ everything lives under `conf/`.
 
 ## Gotchas (hard-won, do not relearn)
 
+- **Once `hyprland.lua` is the live config, `hyprctl dispatch <name> <args>`
+  (old hyprlang two-token syntax) fails.** `hyprctl dispatch` now expects a
+  Lua expression: `hyprctl dispatch 'hl.dsp.<name>(<args>)'` (e.g. `hyprctl
+  dispatch 'hl.dsp.exit()'`, `hyprctl dispatch 'hl.dsp.dpms("off")'`,
+  `hyprctl dispatch 'hl.dsp.window.move({ direction = "l" })'`). This bit
+  every script that shells out to `hyprctl dispatch` (`session-exit`,
+  `movewindow`, `away-mode`, `window-switcher`, `workspace-send-all`) and
+  both `hypridle.conf` files' `dpms on`/`off` actions — hypridle itself
+  stays hyprlang, but its shelled-out `hyprctl dispatch` calls are
+  interpreted by the *live Hyprland instance*, so they need the new syntax
+  regardless of hypridle's own config format. Audit any new script or
+  hypridle/hyprlock action that calls `hyprctl dispatch` for this.
 - **hypridle crashes at startup if `~/.config/hypr/hypridle.conf` is missing,
   even when `-c` points to a valid file** (hypridle 0.1.7). The top-level
   `hypridle.conf` is a tracked symlink to `conf/machine/hypridle.conf` for this

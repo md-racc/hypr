@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# scripts/verify-lua-config <machine>
+# Static-checks the in-progress Lua config without touching the live session.
+set -euo pipefail
+
+machine="${1:?usage: verify-lua-config <zion|rocinante>}"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+scratch="$(mktemp -d)"
+trap 'rm -rf "$scratch"' EXIT
+
+cp -r "$repo_root/conf" "$scratch/conf"
+cp "$repo_root/hyprland.lua" "$scratch/hyprland.lua" 2>/dev/null || true
+rm -f "$scratch/conf/machine"
+ln -s "$scratch/conf/machines/$machine" "$scratch/conf/machine"
+
+Hyprland --config "$scratch/hyprland.lua" --verify-config

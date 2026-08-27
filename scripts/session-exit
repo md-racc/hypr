@@ -2,4 +2,4 @@
 # Exit the Hyprland session cleanly: stop session-scoped systemd units
 # (everything PartOf/BindsTo graphical-session.target), then exit Hyprland.
 systemctl --user stop graphical-session.target
-exec hyprctl dispatch exit
+exec hyprctl dispatch 'hl.dsp.exit()'

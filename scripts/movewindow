@@ -8,12 +8,12 @@ dir=$1
 [ -n "$dir" ] || { echo "usage: movewindow <l|r|u|d>" >&2; exit 1; }
 
 pos_before=$(hyprctl activewindow -j | jq -r '.at | @csv')
-hyprctl dispatch movewindow "$dir"
+hyprctl dispatch "hl.dsp.window.move({ direction = \"$dir\" })"
 pos_after=$(hyprctl activewindow -j | jq -r '.at | @csv')
 
 if [[ "$pos_before" == "$pos_after" ]]; then
     case "$dir" in
-        l) hyprctl dispatch movetoworkspace -1 ;;
-        r) hyprctl dispatch movetoworkspace +1 ;;
+        l) hyprctl dispatch 'hl.dsp.window.move({ workspace = "-1" })' ;;
+        r) hyprctl dispatch 'hl.dsp.window.move({ workspace = "+1" })' ;;
     esac
 fi

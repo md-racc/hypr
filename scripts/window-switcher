@@ -9,4 +9,4 @@ idx=$(jq -r '.[] | "\(.class): \(.title)"' <<<"$clients" | fuzzel --dmenu --inde
 [ -z "$idx" ] && exit 0
 
 addr=$(jq -r --argjson i "$idx" '.[$i].address' <<<"$clients")
-[ -n "$addr" ] && hyprctl dispatch focuswindow "address:$addr"
+[ -n "$addr" ] && hyprctl dispatch "hl.dsp.focus({ window = \"address:$addr\" })"

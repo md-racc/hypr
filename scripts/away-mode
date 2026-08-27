@@ -10,7 +10,7 @@ set -euo pipefail
 # Lock first — hyprlock's screenshot background needs live outputs.
 loginctl lock-session
 sleep 0.5
-hyprctl dispatch dpms off
+hyprctl dispatch 'hl.dsp.dpms("off")'
 
 # Hold the inhibitor until hyprlock exits (waits up to 10s for it to
 # appear so the lock/inhibit race can't drop the lock early).

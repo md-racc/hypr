@@ -1,4 +1,4 @@
-local programs = require("machine.programs")
+local programs = require("conf.machine.programs")
 
 hl.bind("SUPER + E", hl.dsp.exec_cmd(programs.fileManager))
 hl.bind("SUPER + P", hl.dsp.exec_cmd(programs.taskmanager))

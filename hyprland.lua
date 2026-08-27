@@ -15,6 +15,6 @@ require("conf.rules")
 
 hl.config({
     xwayland = {
-        enabled = true,
+        enabled = false,
     },
 })

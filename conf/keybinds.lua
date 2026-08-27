@@ -93,13 +93,14 @@ hl.bind("SUPER + G", hl.dsp.exec_cmd([[bash -c 'text=$(textgrab); [ -n "$text" ]
 ---- RESIZE SUBMAP ------
 -------------------------
 -- Hold SUPER+W, mash HJKL to resize, release W to exit.
--- VERIFY IN TASK 8: does an unbound key inside this submap fall through / get
--- stuck the way hyprlang's `bind = , catchall, submap, reset` used to prevent?
+-- resize wants an explicit relative=true for delta-based sizing — without it,
+-- x/y are an absolute target size, and a negative delta throws "Invalid size"
+-- (found live: this was crashing the dispatcher and stranding the submap).
 hl.define_submap("resize", function()
-    hl.bind("SUPER + H", hl.dsp.window.resize({ x = -40, y = 0 }), { repeating = true })
-    hl.bind("SUPER + J", hl.dsp.window.resize({ x = 0,   y = 40 }), { repeating = true })
-    hl.bind("SUPER + K", hl.dsp.window.resize({ x = 0,   y = -40 }), { repeating = true })
-    hl.bind("SUPER + L", hl.dsp.window.resize({ x = 40,  y = 0 }), { repeating = true })
+    hl.bind("SUPER + H", hl.dsp.window.resize({ x = -40, y = 0,  relative = true }), { repeating = true })
+    hl.bind("SUPER + J", hl.dsp.window.resize({ x = 0,   y = 40,  relative = true }), { repeating = true })
+    hl.bind("SUPER + K", hl.dsp.window.resize({ x = 0,   y = -40, relative = true }), { repeating = true })
+    hl.bind("SUPER + L", hl.dsp.window.resize({ x = 40,  y = 0,  relative = true }), { repeating = true })
     hl.bind("SUPER + W", hl.dsp.submap("reset"), { release = true, transparent = true })
     hl.bind("W",         hl.dsp.submap("reset"), { release = true, transparent = true })
     hl.bind("Escape",    hl.dsp.submap("reset"))

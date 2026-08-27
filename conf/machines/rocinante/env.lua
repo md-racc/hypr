@@ -1,0 +1,7 @@
+hl.env("XCURSOR_SIZE", "24")
+hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("MOZ_ENABLE_WAYLAND", "1")
+hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
+hl.env("OZONE_PLATFORM", "wayland")
+hl.env("GDK_BACKEND", "wayland,x11")
+hl.env("GSK_RENDERER", "gl")

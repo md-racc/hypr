@@ -33,6 +33,14 @@ hl.window_rule({ name = "spotify-tile", match = { class = "^(Spotify)$" }, tile 
 hl.window_rule({ name = "resources-float", match = { class = "net.nokyan.Resources" }, float = true })
 hl.window_rule({ name = "portal-float",    match = { class = "xdg-desktop-portal-gtk" }, float = true })
 
+hl.window_rule({
+    name   = "termfilechooser",
+    match  = { class = "termfilechooser" },
+    float  = true,
+    size   = "1100 650",
+    center = true,
+})
+
 -- File manager
 hl.window_rule({ name = "nemo-float", match = { class = "nemo" }, float = true })
 

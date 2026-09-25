@@ -27,7 +27,7 @@ everything lives under `conf/`.
 - **Once `hyprland.lua` is the live config, `hyprctl dispatch <name> <args>`
   (old hyprlang two-token syntax) fails.** `hyprctl dispatch` now expects a
   Lua expression: `hyprctl dispatch 'hl.dsp.<name>(<args>)'` (e.g. `hyprctl
-  dispatch 'hl.dsp.exit()'`, `hyprctl dispatch 'hl.dsp.dpms("off")'`,
+  dispatch 'hl.dsp.exit()'`, `hyprctl dispatch 'hl.dsp.dpms({action = "off"})'`,
   `hyprctl dispatch 'hl.dsp.window.move({ direction = "l" })'`). This bit
   every script that shells out to `hyprctl dispatch` (`session-exit`,
   `movewindow`, `away-mode`, `window-switcher`, `workspace-send-all`) and
@@ -36,6 +36,11 @@ everything lives under `conf/`.
   interpreted by the *live Hyprland instance*, so they need the new syntax
   regardless of hypridle's own config format. Audit any new script or
   hypridle/hyprlock action that calls `hyprctl dispatch` for this.
+- **`hl.dsp.dpms` takes a table: `hl.dsp.dpms({action = "on"})`.** A bare
+  string (`hl.dsp.dpms("on")`) is silently ignored and the call *toggles*.
+  `hyprctl` still prints `ok`. This blanked the screen right after unlock
+  (away-mode) and right after resume (`after_sleep_cmd`) until 2026-09-25.
+  Reference: `/usr/share/hypr/hypridle.conf` and `/usr/share/hypr/stubs/hl.meta.lua`.
 - **hypridle crashes at startup if `~/.config/hypr/hypridle.conf` is missing,
   even when `-c` points to a valid file** (hypridle 0.1.7). The top-level
   `hypridle.conf` is a tracked symlink to `conf/machine/hypridle.conf` for this

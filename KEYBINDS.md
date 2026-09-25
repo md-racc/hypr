@@ -31,6 +31,7 @@
 | `SUPER+B` | Browser (`firefox`) |
 | `SUPER+R` | App launcher (`fuzzel`) |
 | `SUPER+V` | Clipboard history picker (`cliphist` → fuzzel → paste-ready) |
+| `SUPER+SHIFT+V` | Vaultwarden picker (`~/.local/bin/vw`: rbw → fuzzel, fingerprint unlock) |
 | `SUPER+Tab` | Window switcher (fuzzel list of open windows) |
 
 ---

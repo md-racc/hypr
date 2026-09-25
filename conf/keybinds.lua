@@ -19,7 +19,7 @@ hl.bind("SUPER + W",      hl.dsp.submap("resize"))
 hl.bind("SUPER + N", hl.dsp.exec_cmd([[bash -c 'f=$(cat /tmp/last-screenshot 2>/dev/null) && [ -f "$f" ] && satty --filename "$f"']]))
 
 -- Window management
-hl.bind("SUPER + Q",         hl.dsp.window.kill())
+hl.bind("SUPER + Q",         hl.dsp.window.close())
 hl.bind("SUPER + F",         hl.dsp.window.fullscreen({ mode = 1 }))
 hl.bind("SUPER + SPACE",     hl.dsp.window.float({ action = "toggle" }))
 hl.bind("SUPER + S",         hl.dsp.layout("togglesplit"))

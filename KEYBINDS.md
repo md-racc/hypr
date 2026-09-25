@@ -165,8 +165,8 @@ Tap `SUPER+X`, **keep SUPER held**, then one key.
 
 | Key | Action |
 |-----|--------|
-| `SUPER+L` | Lock (`hyprlock` with blurred screenshot) |
-| `SUPER+A` | **Away mode** — lock + screens off, suspend blocked, processes/network stay alive until unlock |
+| `SUPER+L` | Lock (`loginctl lock-session` → `scripts/lockscreen`) |
+| `SUPER+A` | **Away mode** — lock + screens off; suspend *and lid-close* blocked, processes/network stay alive until unlock |
 | `SUPER+S` | Suspend |
 | `SUPER+R` | Reboot |
 | `SUPER+P` | Power off |

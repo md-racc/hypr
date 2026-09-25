@@ -22,6 +22,43 @@ everything lives under `conf/`.
   then `hyprctl dispatch exit`). Never bind bare `hyprctl dispatch exit`.
 - XWayland is disabled globally.
 
+## Locking (lock / idle / power submap)
+
+One entry point: `scripts/lockscreen` (read its header before touching any of this).
+- `lockscreen lock`: hypridle's `lock_cmd`. Everything else locks through
+  `loginctl lock-session` (power submap L, the idle listener, `before_sleep_cmd`),
+  so there's a single path. It's a flock'd supervisor: runs hyprlock, relaunches
+  it on any non-zero exit (crash), and on exit 0 (unlocked) turns the displays
+  on. Needs `misc:allow_session_lock_restore = true` (appearance.lua).
+  **Children must not inherit the lock fd** (`9>&-`): `rbw lock` once started
+  rbw-agent, which held the flock forever, and every later lock became a
+  silent no-op.
+- Fingerprint is **Enter-triggered and not hyprlock's** (the user wants no
+  scan until they press Enter): `LOCKSCREEN_ENTER` in conf/keybinds.lua is a
+  locked, non-consuming Enter bind that stays *disabled* except while locked
+  (the script flips it with `hyprctl eval 'LOCKSCREEN_ENTER:set_enabled(..)'`).
+  It runs `lockscreen fprint`: one `fprintd-verify`, and on a match
+  `pkill -USR1 hyprlock` (hyprlock's unlock signal). No status text (the user
+  wants only the clock); the only feedback is the reader's LED.
+  hyprlock's own `auth:fingerprint` stays disabled: it scans from the moment
+  it locks and never retries after a device error.
+- `lockscreen away`: power submap A. Same supervisor under a
+  `sleep:handle-lid-switch` block inhibitor, displays off. The lid does NOT
+  suspend while away (the user chose this).
+- `lockscreen resume`: `after_sleep_cmd`. Displays on.
+- Speed: the laptop background is `grim -l 0` (uncompressed PNG, ~50ms; the
+  default compression level took ~1.25s) and hyprlock `animations` are off.
+  Keep slow calls (e.g. `fprintd-list`, ~460ms) out of the lock and Enter paths.
+- rocinante PAM: `/etc/pam.d/hyprlock-nofp` (outside the repo) is pam_unix only.
+  **Never add pam_faillock or pam_fprintd there.** Any auth that abandons
+  hyprlock's pending PAM conversation (fingerprint, SIGUSR1) makes faillock
+  count a failure; 3 fingerprint unlocks within 15 min locked the user out
+  (2026-09-25). Rate limiting is hyprlock's `general:fail_timeout`.
+- rocinante's lock screen deliberately has no input-field (the user's choice):
+  type the password blind + Enter. `ignore_empty_input` stops Enter-to-wake
+  counting as an attempt.
+- Idle (rocinante): 4:30 dim → 4:45 notify → 5:00 lock → 15:00 suspend.
+
 ## Gotchas (hard-won, do not relearn)
 
 - **Once `hyprland.lua` is the live config, `hyprctl dispatch <name> <args>`
@@ -30,7 +67,7 @@ everything lives under `conf/`.
   dispatch 'hl.dsp.exit()'`, `hyprctl dispatch 'hl.dsp.dpms({action = "off"})'`,
   `hyprctl dispatch 'hl.dsp.window.move({ direction = "l" })'`). This bit
   every script that shells out to `hyprctl dispatch` (`session-exit`,
-  `movewindow`, `away-mode`, `window-switcher`, `workspace-send-all`) and
+  `movewindow`, `lockscreen`, `window-switcher`, `workspace-send-all`) and
   both `hypridle.conf` files' `dpms on`/`off` actions — hypridle itself
   stays hyprlang, but its shelled-out `hyprctl dispatch` calls are
   interpreted by the *live Hyprland instance*, so they need the new syntax
@@ -39,7 +76,7 @@ everything lives under `conf/`.
 - **`hl.dsp.dpms` takes a table: `hl.dsp.dpms({action = "on"})`.** A bare
   string (`hl.dsp.dpms("on")`) is silently ignored and the call *toggles*.
   `hyprctl` still prints `ok`. This blanked the screen right after unlock
-  (away-mode) and right after resume (`after_sleep_cmd`) until 2026-09-25.
+  (the old away-mode script) and right after resume (`after_sleep_cmd`) until 2026-09-25.
   Reference: `/usr/share/hypr/hypridle.conf` and `/usr/share/hypr/stubs/hl.meta.lua`.
 - **hypridle crashes at startup if `~/.config/hypr/hypridle.conf` is missing,
   even when `-c` points to a valid file** (hypridle 0.1.7). The top-level

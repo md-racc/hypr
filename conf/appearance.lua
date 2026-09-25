@@ -84,5 +84,7 @@ hl.config({
         swallow_regex           = "^(kitty)$",
         -- wake displays from manual dpms-off (away mode) — key-only so desk bumps don't wake
         key_press_enables_dpms  = true,
+        -- scripts/lockscreen relaunches hyprlock (resume, crash); keep the session locked meanwhile
+        allow_session_lock_restore = true,
     },
 })

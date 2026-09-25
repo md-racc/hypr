@@ -112,11 +112,11 @@ end)
 -------------------------
 hl.define_submap("power", function()
     hl.bind("SUPER + L", function()
-        hl.exec_cmd("~/.config/hypr/scripts/hyprlock-blur")
+        hl.exec_cmd("loginctl lock-session")  -- → hypridle lock_cmd → lockscreen lock
         hl.dispatch(hl.dsp.submap("reset"))
     end)
     hl.bind("SUPER + A", function()
-        hl.exec_cmd("~/.config/hypr/scripts/away-mode")
+        hl.exec_cmd("~/.config/hypr/scripts/lockscreen away")
         hl.dispatch(hl.dsp.submap("reset"))
     end)
     hl.bind("SUPER + P", hl.dsp.exec_cmd("systemctl poweroff"))
@@ -128,6 +128,15 @@ hl.define_submap("power", function()
     hl.bind("SUPER + O", hl.dsp.exec_cmd("~/.config/hypr/scripts/session-exit"))
     hl.bind("Escape", hl.dsp.submap("reset"))
 end)
+
+-- Lockscreen: Enter starts a fingerprint scan (scripts/lockscreen fprint).
+-- Kept disabled except while locked — scripts/lockscreen flips it with
+-- `hyprctl eval 'LOCKSCREEN_ENTER:set_enabled(...)'` — so Enter is untouched
+-- in normal use. non_consuming: hyprlock still gets Enter for a typed password.
+LOCKSCREEN_ENTER = hl.bind("RETURN",
+    hl.dsp.exec_cmd("~/.config/hypr/scripts/lockscreen fprint"),
+    { locked = true, non_consuming = true })
+LOCKSCREEN_ENTER:set_enabled(false)
 
 -- Lockscreen power (locked flag = fires while locked; submap can't be entered while locked)
 -- Requires SHIFT to avoid colliding with normal SUPER+P/R binds, which `locked` doesn't restrict to locked-only

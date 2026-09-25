@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# lockscreen — the one way the session gets locked.
+#
+#   lockscreen lock     Lock (hypridle's lock_cmd, via `loginctl lock-session`).
+#                       Supervises hyprlock until you unlock, then turns the
+#                       displays back on. Idempotent: a second call is a no-op.
+#   lockscreen away     Lock for long-running work: sleep AND the lid switch are
+#                       inhibited until unlock, displays go off. Any key wakes
+#                       them (misc:key_press_enables_dpms).
+#   lockscreen resume   hypridle's after_sleep_cmd: displays on.
+#   lockscreen fprint   One fingerprint scan; a match unlocks hyprlock (SIGUSR1).
+#                       Bound to Enter while locked (LOCKSCREEN_ENTER in
+#                       conf/keybinds.lua, enabled only for the lock's lifetime).
+#
+# Fingerprint is NOT hyprlock's: hyprlock's fprintd client starts scanning the
+# moment it locks and never retries after a device error (a scan straddling
+# suspend killed it for good). Here nothing scans until Enter is pressed, and
+# every Enter is a fresh scan. PAM stays password-only (hyprlock-nofp).
+#
+# Supervisor: hyprlock is relaunched whenever it exits without unlocking
+# (crash); misc:allow_session_lock_restore keeps the session locked meanwhile.
+# Unlock = hyprlock exiting 0.
+set -uo pipefail
+
+CONF="$HOME/.config/hypr/conf/machine/hyprlock.conf"
+RUN="${XDG_RUNTIME_DIR:-/tmp}"
+LOCKFILE="$RUN/lockscreen.lock"
+FPRINTLOCK="$RUN/lockscreen-fprint.lock"
+SHOT=/tmp/hyprlock-eDP-1.png   # referenced by rocinante's hyprlock.conf
+FPRINT_TIMEOUT=10
+
+dpms()       { hyprctl dispatch "hl.dsp.dpms({action = \"$1\"})" >/dev/null 2>&1 8>&- 9>&-; }
+enter_bind() { hyprctl eval "LOCKSCREEN_ENTER:set_enabled($1)" >/dev/null 2>&1 8>&- 9>&-; }
+locked()     { ! flock -n "$LOCKFILE" true 2>/dev/null; }
+
+lock() {
+    exec 9>"$LOCKFILE"
+    flock -n 9 || exit 0                       # already locked
+
+    # Children must not inherit the lock fd: `rbw lock` can start rbw-agent,
+    # a daemon that would then hold the lock forever (seen 2026-09-25).
+    rbw lock 2>/dev/null 9>&-
+
+    # Laptop: blurred screenshot background (desktop uses hyprlock's own).
+    # -l 0 = uncompressed PNG: ~50ms vs ~1.25s at the default level.
+    if hyprctl monitors 2>/dev/null | grep -q 'eDP-1'; then
+        (umask 077; grim -o eDP-1 -l 0 "$SHOT" 2>/dev/null 9>&-)
+    fi
+
+    enter_bind true
+
+    local rc started
+    while :; do
+        started=$SECONDS
+        hyprlock --config "$CONF" 9>&-
+        rc=$?
+        ((rc == 0)) && break
+        logger -t lockscreen "hyprlock exited rc=$rc without unlocking; relaunching"
+        ((SECONDS - started < 3)) && sleep 2   # dying on startup: back off
+    done
+
+    enter_bind false
+    pkill -x fprintd-verify 2>/dev/null
+    dpms on
+}
+
+fprint() {
+    # No reader (zion) → fprintd-verify fails fast and nothing happens.
+    locked || exit 0
+    exec 8>"$FPRINTLOCK"
+    flock -n 8 || exit 0                       # a scan is already running
+
+    local result
+    result=$(timeout "$FPRINT_TIMEOUT" fprintd-verify -f any 2>&1 \
+             | grep -o 'verify-[a-z-]*' | tail -1)
+    logger -t lockscreen "fprint: ${result:-timeout}"
+
+    [[ $result == verify-match ]] && pkill -USR1 -x hyprlock
+}
+
+away() {
+    systemd-inhibit --what=sleep:handle-lid-switch --mode=block \
+        --who="lockscreen away" --why="long-running work, displays off" \
+        "$0" lock &
+
+    for _ in $(seq 50); do pgrep -x hyprlock >/dev/null && break; sleep 0.2; done
+    sleep 0.5
+    dpms off
+}
+
+resume() {
+    dpms on
+}
+
+case ${1:-lock} in
+    lock)   lock ;;
+    away)   away ;;
+    resume) resume ;;
+    fprint) fprint ;;
+    *)      echo "usage: lockscreen [lock|away|resume|fprint]" >&2; exit 2 ;;
+esac

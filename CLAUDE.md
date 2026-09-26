@@ -40,8 +40,9 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   silent no-op.
 - Fingerprint is **Enter-triggered and not hyprlock's** (the user wants no
   scan until they press Enter): `LOCKSCREEN_ENTER` in conf/keybinds.lua is a
-  locked, non-consuming Enter bind that stays *disabled* except while locked
-  (the script flips it with `hyprctl eval 'LOCKSCREEN_ENTER:set_enabled(..)'`).
+  locked, non-consuming Enter bind that stays *disabled* except while locked,
+  and only on machines with fprintd (the script flips it with
+  `hyprctl eval 'LOCKSCREEN_ENTER:set_enabled(..)'`).
   It runs `lockscreen fprint`: one `fprintd-verify`, and on a match
   `pkill -USR1 hyprlock` (hyprlock's unlock signal). No status text (the user
   wants only the clock); the only feedback is the reader's LED.
@@ -54,11 +55,17 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
 - Speed: the laptop background is `grim -l 0` (uncompressed PNG, ~50ms; the
   default compression level took ~1.25s) and hyprlock `animations` are off.
   Keep slow calls (e.g. `fprintd-list`, ~460ms) out of the lock and Enter paths.
-- rocinante PAM: `/etc/pam.d/hyprlock-nofp` (outside the repo) is pam_unix only.
-  **Never add pam_faillock or pam_fprintd there.** Any auth that abandons
-  hyprlock's pending PAM conversation (fingerprint, SIGUSR1) makes faillock
-  count a failure; 3 fingerprint unlocks within 15 min locked the user out
-  (2026-09-25). Rate limiting is hyprlock's `general:fail_timeout`.
+- PAM (both machines): hyprlock uses `/etc/pam.d/hyprlock-nofp` (outside the
+  repo, installed by hand), pam_unix only. **Never add pam_faillock or
+  pam_fprintd there, and never point hyprlock back at the default service**
+  (it chains to system-auth's faillock). Any auth that abandons hyprlock's
+  pending PAM conversation (fingerprint, SIGUSR1) makes faillock count a
+  failure; 3 fingerprint unlocks within 15 min locked the user out on rocinante
+  (2026-09-25), and Enter presses on a black post-resume screen did the same on
+  zion, tty login included (2026-09-26). Rate limiting is hyprlock's
+  `general:fail_timeout`; both machines set `ignore_empty_input`. A missing
+  PAM service falls back to `/etc/pam.d/other` (pam_deny) = can never unlock,
+  so install the PAM file before a config references it.
 - rocinante's lock screen deliberately has no input-field (the user's choice):
   type the password blind + Enter. `ignore_empty_input` stops Enter-to-wake
   counting as an attempt.
@@ -114,5 +121,8 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
 ## Known state / pending
 
 - Night light: `hyprsunset.conf` steps 6200K→4500K, 20:00–20:30 (GNV sunset).
-- Known-broken: nothing on zion. rocinante needs `pacman -S playerctl
+- zion's journal is volatile: `systemd-journal-flush.service` is masked, so
+  logs vanish on reboot (nothing persisted since 2025-11-12). The 2026-09-26
+  black screen after resume is undiagnosed for that reason.
+- Known-broken: nothing else on zion. rocinante needs `pacman -S playerctl
   hyprsunset` on its next visit (media keys / night light until then).

@@ -10,7 +10,8 @@
 #   lockscreen resume   hypridle's after_sleep_cmd: displays on.
 #   lockscreen fprint   One fingerprint scan; a match unlocks hyprlock (SIGUSR1).
 #                       Bound to Enter while locked (LOCKSCREEN_ENTER in
-#                       conf/keybinds.lua, enabled only for the lock's lifetime).
+#                       conf/keybinds.lua, enabled only for the lock's lifetime,
+#                       and only where fprintd is installed).
 #
 # Fingerprint is NOT hyprlock's: hyprlock's fprintd client starts scanning the
 # moment it locks and never retries after a device error (a scan straddling
@@ -47,7 +48,8 @@ lock() {
         (umask 077; grim -o eDP-1 -l 0 "$SHOT" 2>/dev/null 9>&-)
     fi
 
-    enter_bind true
+    # No fprintd (zion): leave Enter alone rather than spawn a scan that can't run.
+    command -v fprintd-verify >/dev/null && enter_bind true
 
     local rc started
     while :; do
@@ -65,7 +67,6 @@ lock() {
 }
 
 fprint() {
-    # No reader (zion) → fprintd-verify fails fast and nothing happens.
     locked || exit 0
     exec 8>"$FPRINTLOCK"
     flock -n 8 || exit 0                       # a scan is already running

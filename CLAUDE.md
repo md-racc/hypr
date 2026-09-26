@@ -1,13 +1,14 @@
 # Hyprland config
 
-Multi-machine Hyprland configuration. `hyprland.conf` is only `source` lines;
-everything lives under `conf/`.
+Multi-machine Hyprland configuration, in Lua. `hyprland.lua` is only `require`
+lines; everything lives under `conf/*.lua`. hypridle, hyprlock, and hyprsunset
+have no Lua config and stay hyprlang `.conf`.
 
 ## Architecture
 
 - `conf/machine` is a **gitignored symlink** to `conf/machines/<hostname>/`,
   created once per machine (`ln -s machines/<host> conf/machine`). Shared config
-  (`appearance.conf`, `keybinds.conf`, `rules.conf`) applies everywhere;
+  (`appearance.lua`, `keybinds.lua`, `rules.lua`) applies everywhere;
   per-machine dirs hold `monitors`, `env`, `programs`, `autostart`, `input`,
   extra keybinds, and `hyprlock`/`hypridle` configs.
 - Machines: **zion** — desktop, DP-3 (1080p@165, VRR fullscreen-only) +
@@ -82,10 +83,10 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   even when `-c` points to a valid file** (hypridle 0.1.7). The top-level
   `hypridle.conf` is a tracked symlink to `conf/machine/hypridle.conf` for this
   reason — do not delete it.
-- `hyprctl configerrors` only validates the hyprland.conf chain — hypridle,
+- `hyprctl configerrors` only validates the hyprland.lua chain — hypridle,
   hyprlock, and hyprsunset configs are NOT checked. hypridle silently ignores
   unknown options (an invented `inhibitor` block lingered for months unnoticed).
-- `dwindle:preserve_split = true` (appearance.conf) is required for
+- `dwindle:preserve_split = true` (appearance.lua) is required for
   `togglesplit`/`rotatesplit` to do anything; without it they silently no-op.
 - The resize submap is hold-style: HJKL binds carry the SUPER modifier (it's
   still held), and `bindrt` (release + transparent) on W exits — transparent
@@ -111,4 +112,3 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
 - Night light: `hyprsunset.conf` steps 6200K→4500K, 20:00–20:30 (GNV sunset).
 - Known-broken: nothing on zion. rocinante needs `pacman -S playerctl
   hyprsunset` on its next visit (media keys / night light until then).
-- Queued: Lua config migration (hyprlang deprecated as of Hyprland 0.55).

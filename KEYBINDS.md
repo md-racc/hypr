@@ -1,7 +1,7 @@
 # Hyprland Keybind Reference
 
 > Search tip: use `/pattern` in your pager, or `grep -i keyword KEYBINDS.md`
-> Live truth: `hyprctl binds -j | jq` · shared binds in `conf/keybinds.conf`, machine extras in `conf/machine/keybinds.conf`
+> Live truth: `hyprctl binds -j | jq` · shared binds in `conf/keybinds.lua`, machine extras in `conf/machine/keybinds.lua`
 
 ---
 
@@ -38,7 +38,7 @@
 
 ## Machine-Specific Apps
 
-Same keys, per-machine meaning. Defined in `conf/machine/keybinds.conf`.
+Same keys, per-machine meaning. Defined in `conf/machine/keybinds.lua`.
 
 | Key | zion (desktop) | rocinante (ThinkPad) |
 |-----|----------------|----------------------|
@@ -117,7 +117,7 @@ Mouse alternative: `SUPER+RightMouse` drag (see [Mouse](#mouse)).
 | `` SUPER+SHIFT+` `` | Move window to special workspace |
 
 Windows with class `scratchpad` float 900x600 centered there automatically
-(`rules.conf`).
+(`rules.lua`).
 
 ---
 

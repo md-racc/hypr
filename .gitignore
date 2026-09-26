@@ -11,9 +11,6 @@
 # Per-device symlink (points to conf/machines/<hostname>/)
 conf/machine
 
-# Claude
-scripts/.claude/
-
 # Editor artifacts
 *.swp
 *.swo

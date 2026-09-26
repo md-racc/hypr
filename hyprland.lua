@@ -18,3 +18,13 @@ hl.config({
         enabled = false,
     },
 })
+
+-- Per-scheme overrides (decoration.blur) written by `theme` (wallust) from the
+-- scheme JSON's optional "hyprland" key. Empty/missing file = values above.
+-- Loaded without pcall so mistakes show up in `hyprctl configerrors`.
+local theme_overrides = os.getenv("HOME") .. "/.cache/wallust/hypr-theme.lua"
+local fh = io.open(theme_overrides)
+if fh then
+    fh:close()
+    dofile(theme_overrides)
+end

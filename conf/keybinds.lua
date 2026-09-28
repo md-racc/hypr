@@ -16,7 +16,7 @@ hl.bind("SUPER + X",      hl.dsp.submap("power"))
 hl.bind("SUPER + W",      hl.dsp.submap("resize"))
 
 -- Annotate last screenshot (see Screenshots below)
-hl.bind("SUPER + N", hl.dsp.exec_cmd([[bash -c 'f=$(cat /tmp/last-screenshot 2>/dev/null) && [ -f "$f" ] && satty --filename "$f"']]))
+hl.bind("SUPER + N", hl.dsp.exec_cmd([[bash -c 'f=$(cat "$XDG_RUNTIME_DIR/screenie/last" 2>/dev/null) && [ -f "$f" ] && satty --filename "$f"']]))
 
 -- Window management
 hl.bind("SUPER + Q",         hl.dsp.window.close())
@@ -80,12 +80,14 @@ hl.bind("XF86MonBrightnessDown",         hl.dsp.exec_cmd("brightnessctl set 10%-
 hl.bind("SUPER + XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl set +5%"),  { locked = true })
 hl.bind("SUPER + XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl set 5%-"),  { locked = true })
 
--- Screenshots — to clipboard
-hl.bind("Print",       hl.dsp.exec_cmd("~/.config/hypr/scripts/screenshot area   clip"))
-hl.bind("SHIFT + Print", hl.dsp.exec_cmd("~/.config/hypr/scripts/screenshot active clip"))
--- Screenshots — to file (notification has actions: swayimg / ranger / kitty)
-hl.bind("SUPER + Print",         hl.dsp.exec_cmd("~/.config/hypr/scripts/screenshot area   file"))
-hl.bind("SUPER + SHIFT + Print", hl.dsp.exec_cmd("~/.config/hypr/scripts/screenshot active file"))
+-- Screenshots (screenie; TEMP: run from the dev checkout until the Rust port
+-- is installed system-wide). Plain = clipboard; SUPER = also save a file.
+local SCREENIE = "~/documents/code/screenie/bin/screenie"
+local SHOTS = " --save-dir ~/documents/pictures/screenshots"
+hl.bind("Print",                 hl.dsp.exec_cmd(SCREENIE))
+hl.bind("SHIFT + Print",         hl.dsp.exec_cmd(SCREENIE .. " --window"))
+hl.bind("SUPER + Print",         hl.dsp.exec_cmd(SCREENIE .. SHOTS))
+hl.bind("SUPER + SHIFT + Print", hl.dsp.exec_cmd(SCREENIE .. " --window" .. SHOTS))
 
 -- OCR: extract text from the most recent screenshot (clipboard) and copy it
 hl.bind("SUPER + G", hl.dsp.exec_cmd([[bash -c 'text=$(textgrab); [ -n "$text" ] && notify-send "textgrab" "${text:0:200}"']]))

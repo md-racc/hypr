@@ -77,3 +77,9 @@ hl.window_rule({
     match          = { class = ".*" },
     suppress_event = "maximize",
 })
+
+-- screenie (area screenshot picker) overlay: appear instantly, like slurp
+hl.layer_rule({ name = "screenie", match = { namespace = "^screenie$" }, no_anim = true })
+
+-- screenie's pin (P): the box floats over everything, on every workspace
+hl.window_rule({ name = "screenie-pin", match = { class = "^screenie-pin$" }, float = true, pin = true })

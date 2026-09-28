@@ -135,20 +135,26 @@ Windows with class `scratchpad` float 900x600 centered there automatically
 
 ## Screenshots
 
-grimblast under the hood; area mode = drag-select a region.
+[`screenie`](https://gitea.lan/mdracc/screenie) (for now run from
+`~/documents/code/screenie`). Area shots open its picker: every monitor
+freezes and a box starts on the active window; drive it like vim
+visual-block mode or with the mouse, then `Enter`. The picker's keys (and
+its loupe, enhance, censor, OCR, colour, QR and pin tools) are documented in
+[screenie's README](https://gitea.lan/mdracc/screenie#the-picker).
 
 | Key | Action |
 |-----|--------|
 | `Print` | Area → clipboard |
 | `SHIFT+Print` | Active window → clipboard |
-| `SUPER+Print` | Area → file (`~/documents/pictures/screenshots/`) |
-| `SUPER+SHIFT+Print` | Active window → file |
-| `SUPER+N` | Annotate last screenshot in `satty` (clip or file mode) |
+| `SUPER+Print` | Area → clipboard + file (`~/documents/pictures/screenshots/`) |
+| `SUPER+SHIFT+Print` | Active window → clipboard + file |
+| `SUPER+N` | Annotate the last screenshot in `satty` |
 | `SUPER+G` | OCR the clipboard image (`textgrab`), copy extracted text |
 
-Every screenshot records its path (clip shots save a `/tmp` copy), so
-`SUPER+N` annotates the most recent shot of either kind. Silent no-op
-until a screenshot has been taken this boot.
+Every screenshot records its path in `$XDG_RUNTIME_DIR/screenie/last`
+(clipboard-only shots keep a copy next to it), so `SUPER+N` annotates the
+most recent shot of either kind. Silent no-op until a screenshot has been
+taken this login. Inside the picker, `y` OCRs the box directly.
 
 `SUPER+G` runs [`textgrab`](https://gitea.lan/mdracc/textgrab) with no
 arguments, which reads whatever image is currently on the clipboard —

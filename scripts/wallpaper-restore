@@ -1,11 +1,14 @@
 #!/bin/sh
 # Restore the last wallust wallpaper on session start (called from autostart).
 # tools/set-wallpaper starts awww and fades the image in from the scheme background.
+# wallpaper-mirror holds the scheme's "wallpaper_mirror" side (left/right/output),
+# re-resolved against the monitors connected now.
 
 CACHE="$HOME/.cache/wallust/wallpaper"
 [ -f "$CACHE" ] || exit 0
 
 WALLPAPER=$(cat "$CACHE")
 [ -f "$WALLPAPER" ] || exit 0
+MIRROR=$(cat "$HOME/.cache/wallust/wallpaper-mirror" 2>/dev/null)
 
-exec "$HOME/.config/wallust/tools/set-wallpaper" "$WALLPAPER"
+exec "$HOME/.config/wallust/tools/set-wallpaper" "$WALLPAPER" "$MIRROR"

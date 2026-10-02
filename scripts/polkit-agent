@@ -1,0 +1,71 @@
+#!/bin/sh
+# polkit-agent — polkit authentication prompts in fuzzel (wallust-themed through
+# fuzzel.ini). Run by systemd/polkit-agent.service.
+#
+# With no arguments it execs cmd-polkit-agent (AUR cmd-polkit-git), which runs
+# `polkit-agent --request` once per authorization request: JSON messages arrive on
+# stdin, replies go to stdout, and this script is SIGTERMed when the request ends.
+#
+#   "request password"       fuzzel password prompt. On rocinante an empty Enter
+#                            falls through to the fingerprint reader (polkit PAM is
+#                            password → pam_fprintd → system-auth).
+#   "show info"              fuzzel banner while PAM waits (e.g. "Place your
+#                            finger…"); closed when the next message arrives.
+#   "show error"             notification.
+#   "authorization response" close the banner.
+#
+# Any fuzzel exit other than a submit (Esc, focus loss, crash) cancels the request.
+# Replies are built with jq, so passwords with quotes/backslashes are safe.
+
+if [ "$1" != --request ]; then
+    exec cmd-polkit-agent --serial --command "$0 --request"
+fi
+
+FUZZEL="fuzzel --dmenu --width 50 --namespace polkit-agent"
+BANNER=   # pid of the subshell running the info banner
+
+banner_off() {
+    [ -n "$BANNER" ] || return 0
+    pkill -TERM -P "$BANNER" 2>/dev/null
+    wait "$BANNER" 2>/dev/null
+    BANNER=
+}
+trap 'banner_off; exit 0' TERM INT HUP
+
+field() { printf '%s' "$MSG" | jq -r "$1 // empty"; }
+
+HINT=
+command -v fprintd-verify >/dev/null && HINT="empty = fingerprint"
+
+while IFS= read -r MSG; do
+    case "$(field .action)" in
+    "request password")
+        banner_off
+        PROMPT=$(field .prompt); PROMPT=${PROMPT:-Password:}
+        if PW=$($FUZZEL --password --prompt-only "$PROMPT " \
+                --mesg "$(field .message)" --placeholder "$HINT" </dev/null); then
+            jq -nc --arg p "$PW" '{action: "authenticate", password: $p}'
+        else
+            echo '{"action": "cancel"}'
+        fi
+        ;;
+    "show info")
+        banner_off
+        # Esc on the banner cancels; being killed by banner_off (143) doesn't
+        ( $FUZZEL --prompt-only "  " --mesg "$(field .text)" \
+              --placeholder "Esc to cancel" </dev/null >/dev/null
+          rc=$?
+          [ "$rc" -ne 0 ] && [ "$rc" -ne 143 ] && echo '{"action": "cancel"}'
+        ) &
+        BANNER=$!
+        ;;
+    "show error")
+        banner_off
+        notify-send -a polkit "Authentication" "$(field .text)"
+        ;;
+    "authorization response")
+        banner_off
+        ;;
+    esac
+done
+banner_off

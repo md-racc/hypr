@@ -28,7 +28,7 @@ shutdown ordering — without adopting uwsm. The launcher stays
 |---|---|---|
 | hypridle.service | package | idle lock/dpms/suspend |
 | hyprsunset.service | package | night light |
-| hyprpolkitagent.service | package | polkit prompts |
+| polkit-agent.service | `systemd/` | polkit prompts in fuzzel (`scripts/polkit-agent`, needs AUR `cmd-polkit-git`) |
 | fnott.service | package | notifications (Type=dbus) |
 | cliphist-text.service | `systemd/` | clipboard history (text) |
 | cliphist-image.service | `systemd/` | clipboard history (image) |

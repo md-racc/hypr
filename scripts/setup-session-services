@@ -12,10 +12,16 @@ systemctl --user link --force "$repo/systemd/hyprland-session.target"
 systemctl --user enable --force \
   "$repo/systemd/cliphist-text.service" \
   "$repo/systemd/cliphist-image.service" \
-  "$repo/systemd/nextcloud-client.service"
+  "$repo/systemd/nextcloud-client.service" \
+  "$repo/systemd/polkit-agent.service"
+
+# polkit-agent.service (fuzzel, needs AUR cmd-polkit-git) replaces hyprpolkitagent
+systemctl --user disable hyprpolkitagent.service 2>/dev/null || true
+command -v cmd-polkit-agent >/dev/null ||
+    echo "WARNING: cmd-polkit-agent not installed — polkit prompts won't work (paru -S cmd-polkit-git)" >&2
 
 # Package-shipped units.
-systemctl --user enable fnott.service hypridle.service hyprpolkitagent.service
+systemctl --user enable fnott.service hypridle.service
 
 if command -v hyprsunset >/dev/null; then
     systemctl --user enable hyprsunset.service

@@ -80,14 +80,16 @@ hl.bind("XF86MonBrightnessDown",         hl.dsp.exec_cmd("brightnessctl set 10%-
 hl.bind("SUPER + XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl set +5%"),  { locked = true })
 hl.bind("SUPER + XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl set 5%-"),  { locked = true })
 
--- Screenshots (screenie; TEMP: run from the dev checkout until the Rust port
--- is installed system-wide). Plain = clipboard; SUPER = also save a file.
-local SCREENIE = "~/documents/code/screenie/bin/screenie"
-local SHOTS = " --save-dir ~/documents/pictures/screenshots"
+-- Screenshots (screenie, the Rust port: `cargo install --path crates/screenie`
+-- from screenie's rust/). Plain = clipboard; SUPER = also save a file.
+-- Fallback while the port proves itself: the Python prototype,
+-- ~/documents/code/screenie/bin/screenie [--window] [--save-dir DIR].
+local SCREENIE = "~/.cargo/bin/screenie"
+local SHOTS = " --save ~/documents/pictures/screenshots"
 hl.bind("Print",                 hl.dsp.exec_cmd(SCREENIE))
-hl.bind("SHIFT + Print",         hl.dsp.exec_cmd(SCREENIE .. " --window"))
+hl.bind("SHIFT + Print",         hl.dsp.exec_cmd(SCREENIE .. " shot"))
 hl.bind("SUPER + Print",         hl.dsp.exec_cmd(SCREENIE .. SHOTS))
-hl.bind("SUPER + SHIFT + Print", hl.dsp.exec_cmd(SCREENIE .. " --window" .. SHOTS))
+hl.bind("SUPER + SHIFT + Print", hl.dsp.exec_cmd(SCREENIE .. " shot" .. SHOTS))
 
 -- OCR: extract text from the most recent screenshot (clipboard) and copy it
 hl.bind("SUPER + G", hl.dsp.exec_cmd([[bash -c 'text=$(textgrab); [ -n "$text" ] && notify-send "textgrab" "${text:0:200}"']]))

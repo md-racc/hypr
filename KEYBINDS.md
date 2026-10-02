@@ -135,8 +135,9 @@ Windows with class `scratchpad` float 900x600 centered there automatically
 
 ## Screenshots
 
-[`screenie`](https://gitea.lan/mdracc/screenie) (for now run from
-`~/documents/code/screenie`). Area shots open its picker: every monitor
+[`screenie`](https://gitea.lan/mdracc/screenie): the Rust port, installed
+to `~/.cargo/bin` (`cargo install --path crates/screenie` from its `rust/`;
+the Python prototype in `~/documents/code/screenie/bin` is the fallback). Area shots open its picker: every monitor
 freezes and a box starts on the active window; drive it like vim
 visual-block mode or with the mouse, then `Enter`. The picker's keys (and
 its loupe, enhance, censor, OCR, colour, QR and pin tools) are documented in

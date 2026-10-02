@@ -80,6 +80,8 @@ hl.config({
     misc = {
         force_default_wallpaper = 0,
         disable_hyprland_logo   = true,
+        -- no splash text over the background colour before the wallpaper draws
+        disable_splash_rendering = true,
         enable_swallow          = true,
         swallow_regex           = "^(kitty)$",
         -- wake displays from manual dpms-off (away mode) — key-only so desk bumps don't wake

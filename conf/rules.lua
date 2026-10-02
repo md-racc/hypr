@@ -80,6 +80,8 @@ hl.window_rule({
 
 -- fuzzel (namespace "launcher"): blur what's behind its translucent background
 hl.layer_rule({ name = "fuzzel", match = { namespace = "^launcher$" }, blur = true })
+-- fnott (namespace "notifications"): same
+hl.layer_rule({ name = "fnott", match = { namespace = "^notifications$" }, blur = true })
 
 -- screenie (area screenshot picker) overlay: appear instantly, like slurp
 hl.layer_rule({ name = "screenie", match = { namespace = "^screenie$" }, no_anim = true })

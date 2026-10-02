@@ -12,13 +12,11 @@ systemctl --user link --force "$repo/systemd/hyprland-session.target"
 systemctl --user enable --force \
   "$repo/systemd/cliphist-text.service" \
   "$repo/systemd/cliphist-image.service" \
-  "$repo/systemd/nextcloud-client.service" \
-  "$repo/systemd/polkit-agent.service"
+  "$repo/systemd/nextcloud-client.service"
 
-# polkit-agent.service (fuzzel, needs AUR cmd-polkit-git) replaces hyprpolkitagent
-systemctl --user disable hyprpolkitagent.service 2>/dev/null || true
-command -v cmd-polkit-agent >/dev/null ||
-    echo "WARNING: cmd-polkit-agent not installed — polkit prompts won't work (paru -S cmd-polkit-git)" >&2
+# No polkit agent on purpose: systemctl/pkexec/udisksctl prompt in the terminal
+# (their built-in pkttyagent fallback); GUI-only admin tools just get "not authorized".
+systemctl --user disable hyprpolkitagent.service polkit-agent.service 2>/dev/null || true
 
 # Package-shipped units.
 systemctl --user enable fnott.service hypridle.service

@@ -28,7 +28,6 @@ shutdown ordering — without adopting uwsm. The launcher stays
 |---|---|---|
 | hypridle.service | package | idle lock/dpms/suspend |
 | hyprsunset.service | package | night light |
-| polkit-agent.service | `systemd/` | polkit prompts in fuzzel (`scripts/polkit-agent`, needs AUR `cmd-polkit-git`) |
 | fnott.service | package | notifications (Type=dbus) |
 | cliphist-text.service | `systemd/` | clipboard history (text) |
 | cliphist-image.service | `systemd/` | clipboard history (image) |
@@ -37,6 +36,12 @@ shutdown ordering — without adopting uwsm. The launcher stays
 Repo units are enabled **by absolute path** (`systemctl --user enable
 ~/.config/hypr/systemd/foo.service`), which symlinks back into the repo —
 edit the repo file, `systemctl --user daemon-reload`, done.
+
+No polkit agent on purpose: terminal commands (`systemctl`, `pkexec`,
+`udisksctl`) prompt in the terminal via their built-in fallback agent, which
+handles roci's fingerprint fine (empty Enter → sensor). GUI-only admin tools
+get "not authorized". Decided 2026-10-02 after a fuzzel agent couldn't submit
+an empty field for the fingerprint path.
 
 Still plain `exec-once`: eww (per-machine window set), wallpaper-restore
 (one-shot), gnome-keyring (dbus-activated anyway).

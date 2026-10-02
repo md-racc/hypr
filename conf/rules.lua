@@ -78,6 +78,9 @@ hl.window_rule({
     suppress_event = "maximize",
 })
 
+-- fuzzel (namespace "launcher"): blur what's behind its translucent background
+hl.layer_rule({ name = "fuzzel", match = { namespace = "^launcher$" }, blur = true })
+
 -- screenie (area screenshot picker) overlay: appear instantly, like slurp
 hl.layer_rule({ name = "screenie", match = { namespace = "^screenie$" }, no_anim = true })
 

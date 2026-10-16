@@ -41,6 +41,8 @@ lock() {
     # Children must not inherit the lock fd: `rbw lock` can start rbw-agent,
     # a daemon that would then hold the lock forever (seen 2026-09-25).
     rbw lock 2>/dev/null 9>&-
+    # …and the Agent Zones lab-signing vault profile (no-op where it isn't configured)
+    RBW_PROFILE=lab-signing rbw lock 2>/dev/null 9>&-
 
     # Laptop: blurred screenshot background (desktop uses hyprlock's own).
     # -l 0 = uncompressed PNG: ~50ms vs ~1.25s at the default level.

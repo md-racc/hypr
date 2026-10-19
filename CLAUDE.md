@@ -50,7 +50,12 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   it locks and never retries after a device error.
 - `lockscreen away`: power submap A. Same supervisor under a
   `sleep:handle-lid-switch` block inhibitor, displays off. The lid does NOT
-  suspend while away (the user chose this).
+  suspend while away (the user chose this). The block inhibitor also stops
+  hypridle's 15-min `systemctl suspend` (logind answers `inhibited`; verified
+  2026-10-18). Away also starts `scripts/hotspot-handoff`: it rescans for up to
+  2 min and switches wifi to the phone's `hotspot` profile as soon as it is
+  visible (no-op at home / without the profile). The profile is
+  `802-11-wireless.hidden=yes` so NM probes for it directly.
 - `lockscreen resume`: `after_sleep_cmd`. Displays on.
 - Speed: the laptop background is `grim -l 0` (uncompressed PNG, ~50ms; the
   default compression level took ~1.25s) and hyprlock `animations` are off.

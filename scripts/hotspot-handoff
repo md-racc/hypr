@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# hotspot-handoff — move wifi onto the phone hotspot as soon as it is visible.
+#
+#   hotspot-handoff [SECONDS]   Rescan for up to SECONDS (default 120); the
+#                               moment the hotspot's SSID shows up, activate it.
+#
+# Run by `lockscreen away` (power submap A). Leaving class = away mode + turning
+# the hotspot on, then walking out of eduroam. Left alone, NM clings to eduroam
+# until the link times out, then rescans on backoff; by then the iPhone has
+# usually stopped broadcasting (it only advertises for a short while after
+# Personal Hotspot is switched on) and activation fails with ssid-not-found
+# (seen 2026-09-30), so the laptop sat offline for 100-180 s and ssh died.
+# Switching while eduroam is still up costs one ~1 s blip instead.
+#
+# Does nothing at home (ip-autotailscale's mode file), when there is no
+# `hotspot` profile (zion), or when it is already the active connection.
+set -uo pipefail
+
+CON=hotspot
+WINDOW=${1:-120}
+MODE=/run/ip-autotailscale/mode
+
+log() { logger -t hotspot-handoff "$*"; }
+
+grep -qsx home "$MODE" && exit 0
+ssid=$(nmcli -g 802-11-wireless.ssid con show "$CON" 2>/dev/null) || exit 0
+dev=$(nmcli -g connection.interface-name con show "$CON")
+[[ -n $dev ]] || dev=$(nmcli -t -f DEVICE,TYPE dev | awk -F: '$2 == "wifi" {print $1; exit}')
+
+exec 9>"${XDG_RUNTIME_DIR:-/tmp}/hotspot-handoff.lock"
+flock -n 9 || exit 0                           # one already running
+
+active() { [[ $(nmcli -g GENERAL.CONNECTION dev show "$dev" 2>/dev/null) == "$CON" ]]; }
+active && exit 0
+
+deadline=$((SECONDS + WINDOW))
+while ((SECONDS < deadline)); do
+    # -e no: nmcli's -t output escapes ':' in SSIDs otherwise.
+    if nmcli -t -e no -f SSID dev wifi list ifname "$dev" --rescan yes 2>/dev/null \
+            | grep -qxF "$ssid"; then
+        if nmcli --wait 30 con up "$CON" ifname "$dev" >/dev/null 2>&1; then
+            log "switched to $CON after $((SECONDS))s"
+            exit 0
+        fi
+        log "$CON visible but activation failed; retrying"
+    fi
+    active && exit 0                           # NM (or you) got there first
+    sleep 3
+done
+log "$CON ($ssid) not seen within ${WINDOW}s"
+exit 1

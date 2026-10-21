@@ -12,6 +12,18 @@
 #                       Bound to Enter while locked (LOCKSCREEN_ENTER in
 #                       conf/keybinds.lua, enabled only for the lock's lifetime,
 #                       and only where fprintd is installed).
+#   lockscreen power poweroff|reboot|suspend|away
+#                       The ly-style F1-F4 keys (LOCKSCREEN_POWER in
+#                       conf/keybinds.lua, enabled only for the lock's
+#                       lifetime). No-op unless hyprlock is up. suspend ends
+#                       away mode first (its inhibitor would block it).
+#   lockscreen rearm    Re-enable the lock-only binds after `hyprctl reload`
+#                       (which recreates them disabled) if still locked.
+#
+# Away mode is an inhibitor tied to the lock, not its parent: `away` starts
+# `systemd-inhibit ... lockscreen away-hold`, which waits for the lock to be
+# taken and then released, and locks only if not already locked. So it works
+# the same from the desktop (power submap) and from the lock screen (F4).
 #
 # Fingerprint is NOT hyprlock's: hyprlock's fprintd client starts scanning the
 # moment it locks and never retries after a device error (a scan straddling
@@ -32,7 +44,19 @@ FPRINT_TIMEOUT=10
 
 dpms()       { hyprctl dispatch "hl.dsp.dpms({action = \"$1\"})" >/dev/null 2>&1 8>&- 9>&-; }
 enter_bind() { hyprctl eval "LOCKSCREEN_ENTER:set_enabled($1)" >/dev/null 2>&1 8>&- 9>&-; }
-locked()     { ! flock -n "$LOCKFILE" true 2>/dev/null; }
+has_fprint() { command -v fprintd-verify >/dev/null; }
+arm() {                                        # lock-only binds on/off
+    hyprctl eval "LOCKSCREEN_POWER($1)" >/dev/null 2>&1 8>&- 9>&-
+    if [[ $1 == false ]] || has_fprint; then enter_bind "$1"; fi
+}
+# Is the lock held? Read from /proc/locks rather than probing with flock: a
+# probe briefly takes the lock, and a lock_cmd landing then would no-op.
+locked() {
+    local dev ino
+    read -r dev ino < <(stat -c '%Hd %Ld %i' "$LOCKFILE" 2>/dev/null | \
+        awk '{printf "%02x:%02x %s\n", $1, $2, $3}') || return 1
+    [[ $ino ]] && grep -q " FLOCK .* $dev:$ino " /proc/locks
+}
 
 lock() {
     exec 9>"$LOCKFILE"
@@ -50,8 +74,11 @@ lock() {
         (umask 077; grim -o eDP-1 -l 0 "$SHOT" 2>/dev/null 9>&-)
     fi
 
-    # No fprintd (zion): leave Enter alone rather than spawn a scan that can't run.
-    command -v fprintd-verify >/dev/null && enter_bind true
+    # Lock-only binds. Enter only with fprintd (zion has none): leave it alone
+    # rather than spawn a scan that can't run. Disarmed however we exit.
+    trap 'trap - EXIT; arm false' EXIT
+    trap 'exit 143' TERM HUP INT
+    arm true
 
     local rc started
     while :; do
@@ -63,7 +90,8 @@ lock() {
         ((SECONDS - started < 3)) && sleep 2   # dying on startup: back off
     done
 
-    enter_bind false
+    arm false
+    trap - EXIT
     pkill -x fprintd-verify 2>/dev/null
     dpms on
 }
@@ -84,15 +112,51 @@ fprint() {
 away() {
     systemd-inhibit --what=sleep:handle-lid-switch --mode=block \
         --who="lockscreen away" --why="long-running work, displays off" \
-        "$0" lock &
+        "$0" away-hold 7>&- &
+    locked || setsid -f "$0" lock 7>&-
 
     # Leaving with the phone: get onto its hotspot while the current wifi still
     # works (see the script's header). No-op at home and on machines without it.
-    "${0%/*}/hotspot-handoff" 8>&- 9>&- &
+    "${0%/*}/hotspot-handoff" 7>&- 8>&- 9>&- &   # 7 = power() lock when away comes from F4: never hold it for the 2-min rescan
 
     for _ in $(seq 50); do pgrep -x hyprlock >/dev/null && break; sleep 0.2; done
     sleep 0.5
     dpms off
+}
+
+# Runs under away's inhibitor: wait for the lock (up to 10s), then for unlock.
+away_hold() {
+    for _ in $(seq 50); do locked && break; sleep 0.2; done
+    while locked; do sleep 1; done
+}
+
+power() {
+    pgrep -x hyprlock >/dev/null || exit 0     # lock screen only
+    exec 7>"$RUN/lockscreen-power.lock"
+    flock -n 7 || exit 0                       # one action at a time
+    logger -t lockscreen "power: $1"
+
+    case $1 in
+        poweroff|reboot)
+            systemctl "$1" 7>&- || logger -t lockscreen "power: $1 failed" ;;
+        suspend)
+            # Away's block inhibitor would refuse the suspend: end away first
+            # and wait for logind to drop the inhibitor.
+            if pkill -f "lockscreen away-hold"; then
+                for _ in $(seq 20); do
+                    systemd-inhibit --list --no-legend 2>/dev/null \
+                        | grep -q 'lockscreen away' || break
+                    sleep 0.1
+                done
+            fi
+            systemctl suspend 7>&- || logger -t lockscreen "power: suspend failed" ;;
+        away) away ;;
+        *) echo "usage: lockscreen power poweroff|reboot|suspend|away" >&2; exit 2 ;;
+    esac
+}
+
+rearm() {
+    locked && pgrep -x hyprlock >/dev/null && arm true
 }
 
 resume() {
@@ -104,5 +168,8 @@ case ${1:-lock} in
     away)   away ;;
     resume) resume ;;
     fprint) fprint ;;
-    *)      echo "usage: lockscreen [lock|away|resume|fprint]" >&2; exit 2 ;;
+    power)  power "${2:-}" ;;
+    rearm)  rearm ;;
+    away-hold) away_hold ;;
+    *)      echo "usage: lockscreen [lock|away|resume|fprint|power ACTION|rearm]" >&2; exit 2 ;;
 esac

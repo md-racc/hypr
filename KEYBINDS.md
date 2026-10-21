@@ -59,6 +59,7 @@ Same keys, per-machine meaning. Defined in `conf/machine/keybinds.lua`.
 | `SUPER+Q` | Close window |
 | `SUPER+F` | Fullscreen (maximize style, keeps bars) |
 | `SUPER+Space` | Toggle floating |
+| `SUPER+SHIFT+Space` | Cycle focus tiled → each floating window → back to tiled (current workspace) |
 | `SUPER+S` | Toggle split axis (side-by-side ↔ stacked) |
 | `SUPER+SHIFT+S` | Rotate split 90° (windows carried around the rotation) |
 | `SUPER+SHIFT+E` | Reset all splits on workspace to even (dwindle-calculated sizes) |
@@ -136,8 +137,7 @@ Windows with class `scratchpad` float 900x600 centered there automatically
 ## Screenshots
 
 [`screenie`](https://gitea.lan/mdracc/screenie): the Rust port, installed
-to `~/.cargo/bin` (`cargo install --path crates/screenie` from its `rust/`;
-the Python prototype in `~/documents/code/screenie/bin` is the fallback). Area shots open its picker: every monitor
+to `~/.cargo/bin` (`cargo install --path crates/screenie` from its `rust/`). Area shots open its picker: every monitor
 freezes and a box starts on the active window; drive it like vim
 visual-block mode or with the mouse, then `Enter`. The picker's keys (and
 its loupe, enhance, censor, OCR, colour, QR and pin tools) are documented in
@@ -149,20 +149,23 @@ its loupe, enhance, censor, OCR, colour, QR and pin tools) are documented in
 | `SHIFT+Print` | Active window → clipboard |
 | `SUPER+Print` | Area → clipboard + file (`~/documents/pictures/screenshots/`) |
 | `SUPER+SHIFT+Print` | Active window → clipboard + file |
-| `SUPER+N` | Annotate the last screenshot in `satty` |
-| `SUPER+G` | OCR the clipboard image (`textgrab`), copy extracted text |
+| `SUPER+N` | Annotate the last screenshot (`screenie edit last --mode annotate`) |
+| `SUPER+G` | OCR the most recent image (`screenie edit --result text`), copy extracted text |
 
-Every screenshot records its path in `$XDG_RUNTIME_DIR/screenie/last`
-(clipboard-only shots keep a copy next to it), so `SUPER+N` annotates the
-most recent shot of either kind. Silent no-op until a screenshot has been
-taken this login. Inside the picker, `y` OCRs the box directly.
+Every screenshot is kept in `$XDG_RUNTIME_DIR/screenie/` with its
+project (clipboard-only shots too), so `SUPER+N` reopens the most recent
+shot of either kind in screenie's picker, in Annotate, with its earlier
+censors and annotations still editable; every other tool (censor,
+filter, OCR, pin…) is there too. `Enter` copies the result. Does nothing
+until a screenshot has been taken this login.
 
-`SUPER+G` runs [`textgrab`](https://gitea.lan/mdracc/textgrab) with no
-arguments, which reads whatever image is currently on the clipboard —
-in practice, the last screenshot taken with `Print`/`SHIFT+Print`. A
-window opens over the image; drag-select a region to OCR it and copy
-the text, or press `a` to OCR the whole image. A notification shows a
-preview of what was copied.
+`SUPER+G` replaces [`textgrab`](https://gitea.lan/mdracc/textgrab): it
+opens the most recent image in screenie's picker, the image on the
+clipboard (from screenie or any other app; a screenie shot reopens with
+its layers) or, with none there, the last screenshot. The box starts on
+the whole image; drag a region to narrow it, then `Enter` OCRs it,
+copies the text and shows a preview in a notification. Inside the
+picker of a fresh shot, `y` OCRs the box directly.
 
 ---
 
@@ -182,10 +185,17 @@ Tap `SUPER+X`, **keep SUPER held**, then one key.
 
 ### From the lock screen
 
-Submaps can't be entered while locked. Use these direct binds instead:
+Submaps can't be entered while locked. Use these direct binds instead.
+The F-keys work like ly's and exist only while locked. A press that wakes
+dark displays only wakes them. On rocinante they're the media keys unless
+Fn-lock is on (or hold Fn).
 
 | Key | Action |
 |-----|--------|
+| `F1` | Power off |
+| `F2` | Reboot |
+| `F3` | Suspend (ends away mode first) |
+| `F4` | Away mode (as `SUPER+X` → `SUPER+A`; already locked, so it just blocks suspend/lid and turns the screens off) |
 | `SUPER+SHIFT+P` | Power off |
 | `SUPER+SHIFT+R` | Reboot |
 

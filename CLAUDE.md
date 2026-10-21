@@ -48,14 +48,32 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   wants only the clock); the only feedback is the reader's LED.
   hyprlock's own `auth:fingerprint` stays disabled: it scans from the moment
   it locks and never retries after a device error.
-- `lockscreen away`: power submap A. Same supervisor under a
-  `sleep:handle-lid-switch` block inhibitor, displays off. The lid does NOT
-  suspend while away (the user chose this). The block inhibitor also stops
-  hypridle's 15-min `systemctl suspend` (logind answers `inhibited`; verified
-  2026-10-18). Away also starts `scripts/hotspot-handoff`: it rescans for up to
-  2 min and switches wifi to the phone's `hotspot` profile as soon as it is
-  visible (no-op at home / without the profile). The profile is
-  `802-11-wireless.hidden=yes` so NM probes for it directly.
+- `lockscreen away`: power submap A, or F4 on the lock screen. A
+  `sleep:handle-lid-switch` block inhibitor around `lockscreen away-hold`,
+  which waits for the lock to be taken and then released (it locks only if
+  not already locked), so it works from the desktop and from the lock screen.
+  Displays off. The lid does NOT suspend while away (the user chose this). The
+  block inhibitor also stops hypridle's 15-min `systemctl suspend` (logind
+  answers `inhibited`; verified 2026-10-18). Away also starts
+  `scripts/hotspot-handoff`: it rescans for up to 2 min and switches wifi to the
+  phone's `hotspot` profile as soon as it is visible (no-op at home / without
+  the profile). The profile is `802-11-wireless.hidden=yes` so NM probes for it
+  directly. The handoff runs with fd 7 closed: when away comes from F4, fd 7 is
+  `power`'s one-action lock, and holding it would silently refuse F1-F3 for 2 min.
+- ly-style power keys on the lock screen, both machines: F1 poweroff, F2
+  reboot, F3 suspend (ends away first: its inhibitor would block it), F4
+  away. `LOCKSCREEN_POWER(on)` in conf/keybinds.lua, armed with
+  LOCKSCREEN_ENTER for the lock's lifetime (disarmed by an EXIT trap,
+  re-armed on `config.reloaded` via `lockscreen rearm`); `lockscreen power`
+  also refuses unless hyprlock is up. **Wake guard:** the press that wakes
+  dark displays (`key_press_enables_dpms`) can also fire the bind (order
+  unverified: `wtype` input doesn't trigger binds), so a 100ms timer
+  records when a display was last off and F-presses within ~300ms of that
+  only wake. Lock state is read from `/proc/locks` (`locked()`), never by
+  probing with flock (a probe briefly holds the lock and would no-op a
+  concurrent lock_cmd); the PID there is the `flock` helper's, not the
+  supervisor's, so don't wait on it. On rocinante F1-F4 are media keys
+  unless Fn-lock is on.
 - `lockscreen resume`: `after_sleep_cmd`. Displays on.
 - Speed: the laptop background is `grim -l 0` (uncompressed PNG, ~50ms; the
   default compression level took ~1.25s) and hyprlock `animations` are off.

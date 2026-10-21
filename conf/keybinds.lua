@@ -15,13 +15,43 @@ hl.bind("SUPER + TAB",    hl.dsp.exec_cmd("~/.config/hypr/scripts/window-switche
 hl.bind("SUPER + X",      hl.dsp.submap("power"))
 hl.bind("SUPER + W",      hl.dsp.submap("resize"))
 
--- Annotate last screenshot (see Screenshots below)
-hl.bind("SUPER + N", hl.dsp.exec_cmd([[bash -c 'f=$(cat "$XDG_RUNTIME_DIR/screenie/last" 2>/dev/null) && [ -f "$f" ] && satty --filename "$f"']]))
+-- Annotate last screenshot, its layers still editable (see Screenshots below)
+hl.bind("SUPER + N", hl.dsp.exec_cmd("~/.cargo/bin/screenie edit last --mode annotate"))
 
 -- Window management
 hl.bind("SUPER + Q",         hl.dsp.window.close())
 hl.bind("SUPER + F",         hl.dsp.window.fullscreen({ mode = 1 }))
 hl.bind("SUPER + SPACE",     hl.dsp.window.float({ action = "toggle" }))
+
+-- Cycle focus tiled → floating 1 → floating 2 → … → tiled (current workspace).
+-- Directional focus never crosses from tiled to floating, so this is the bridge.
+-- Back to tiled lands on the most recently focused tiled window.
+hl.bind("SUPER + SHIFT + SPACE", function()
+    local active = hl.get_active_window()
+    local ws = active and active.workspace or hl.get_active_workspace()
+    if not ws then return end
+    local floating, tiled = {}, {}
+    for _, w in ipairs(hl.get_windows()) do
+        if w.mapped and not w.hidden and w.workspace and w.workspace.id == ws.id then
+            table.insert(w.floating and floating or tiled, w)
+        end
+    end
+    table.sort(floating, function(a, b) return a.stable_id < b.stable_id end)
+    table.sort(tiled, function(a, b) return a.focus_history_id < b.focus_history_id end)
+
+    local target
+    if active and active.floating then
+        for i, w in ipairs(floating) do
+            if w.address == active.address then target = floating[i + 1] end
+        end
+        target = target or tiled[1]
+    else
+        target = floating[1]
+    end
+    if target and not (active and target.address == active.address) then
+        hl.dispatch(hl.dsp.focus({ window = "address:" .. target.address }))
+    end
+end)
 hl.bind("SUPER + S",         hl.dsp.layout("togglesplit"))
 hl.bind("SUPER + SHIFT + S", hl.dsp.layout("rotatesplit"))
 hl.bind("SUPER + SHIFT + E", hl.dsp.exec_cmd("~/.config/hypr/scripts/resetsplits"))
@@ -82,8 +112,6 @@ hl.bind("SUPER + XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl set 5%-"
 
 -- Screenshots (screenie, the Rust port: `cargo install --path crates/screenie`
 -- from screenie's rust/). Plain = clipboard; SUPER = also save a file.
--- Fallback while the port proves itself: the Python prototype,
--- ~/documents/code/screenie/bin/screenie [--window] [--save-dir DIR].
 local SCREENIE = "~/.cargo/bin/screenie"
 local SHOTS = " --save ~/documents/pictures/screenshots"
 hl.bind("Print",                 hl.dsp.exec_cmd(SCREENIE))
@@ -91,8 +119,9 @@ hl.bind("SHIFT + Print",         hl.dsp.exec_cmd(SCREENIE .. " shot"))
 hl.bind("SUPER + Print",         hl.dsp.exec_cmd(SCREENIE .. SHOTS))
 hl.bind("SUPER + SHIFT + Print", hl.dsp.exec_cmd(SCREENIE .. " shot" .. SHOTS))
 
--- OCR: extract text from the most recent screenshot (clipboard) and copy it
-hl.bind("SUPER + G", hl.dsp.exec_cmd([[bash -c 'text=$(textgrab); [ -n "$text" ] && notify-send "textgrab" "${text:0:200}"']]))
+-- OCR the most recent image (the clipboard's, else the last shot): drag a
+-- region or keep the whole image; Enter copies the text and notifies
+hl.bind("SUPER + G", hl.dsp.exec_cmd(SCREENIE .. " edit --result text"))
 
 -------------------------
 ---- RESIZE SUBMAP ------
@@ -142,7 +171,41 @@ LOCKSCREEN_ENTER = hl.bind("RETURN",
     { locked = true, non_consuming = true })
 LOCKSCREEN_ENTER:set_enabled(false)
 
--- Lockscreen power (locked flag = fires while locked; submap can't be entered while locked)
--- Requires SHIFT to avoid colliding with normal SUPER+P/R binds, which `locked` doesn't restrict to locked-only
-hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd("systemctl poweroff"), { locked = true })
-hl.bind("SUPER + SHIFT + R", hl.dsp.exec_cmd("systemctl reboot"),   { locked = true })
+-- Lockscreen power keys, ly-style: F1 off, F2 reboot, F3 suspend, F4 away.
+-- Lock-only like LOCKSCREEN_ENTER: scripts/lockscreen calls
+-- LOCKSCREEN_POWER(true/false), and `lockscreen power` re-checks that
+-- hyprlock is up, so a bind left enabled can never fire unlocked.
+-- Wake guard: the press that wakes dark displays (key_press_enables_dpms)
+-- can also fire the bind, so F1 on a dark screen could power off. A 100ms
+-- watcher notes when any display was last off; a press within ~300ms of
+-- that only wakes.
+local tick, dark_tick = 0, -100
+local dark_watch = hl.timer(function()
+    tick = tick + 1
+    for _, m in ipairs(hl.get_monitors()) do
+        if not m.dpms_status then dark_tick = tick end
+    end
+end, { timeout = 100, type = "repeat" })
+
+local power_binds = {}
+for key, action in pairs({ F1 = "poweroff", F2 = "reboot", F3 = "suspend", F4 = "away" }) do
+    power_binds[#power_binds + 1] = hl.bind(key, function()
+        for _, m in ipairs(hl.get_monitors()) do
+            if not m.dpms_status then return end
+        end
+        if tick - dark_tick <= 3 then return end
+        hl.exec_cmd("~/.config/hypr/scripts/lockscreen power " .. action)
+    end, { locked = true })
+end
+
+function LOCKSCREEN_POWER(on)
+    dark_watch:set_enabled(on)
+    for _, b in ipairs(power_binds) do b:set_enabled(on) end
+end
+LOCKSCREEN_POWER(false)
+
+-- A reload while locked recreates these disabled; re-arm if still locked.
+hl.on("config.reloaded", function()
+    hl.exec_cmd("~/.config/hypr/scripts/lockscreen rearm")
+end)
+

@@ -1,12 +1,16 @@
 [Unit]
-Description=Nextcloud sync client
+Description=Nextcloud sync (inotify + nextcloudcmd)
 PartOf=graphical-session.target
-After=graphical-session.target
-ConditionEnvironment=WAYLAND_DISPLAY
+After=graphical-session.target network-online.target
 
 [Service]
-ExecStart=/usr/bin/nextcloud --background
+EnvironmentFile=%h/.config/nextcloud-sync.env
+# network-online.target means nothing to the user manager; wait for NM directly
+# (the first start used to fail every boot and sit out a 30s RestartSec).
+ExecStartPre=/usr/bin/nm-online -q -t 60
+ExecStart=%h/.local/bin/nc-sync
 Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=graphical-session.target

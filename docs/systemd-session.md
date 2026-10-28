@@ -9,7 +9,7 @@ shutdown ordering — without adopting uwsm. The launcher stays
 ## How it works
 
 1. Autostart runs one line:
-   `dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP DISPLAY && systemctl --user start hyprland-session.target`
+   `dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP DISPLAY && { systemctl --user stop xdg-desktop-portal …; systemctl --user start hyprland-session.target; }`
    The first half pushes the Wayland env into the systemd user manager
    (units have `ConditionEnvironment=WAYLAND_DISPLAY`); the `&&` matters —
    both halves must run in one `exec-once` so the import completes before
@@ -77,3 +77,9 @@ Verify: `systemctl --user status graphical-session.target` is active and
   line from a terminal inside the session.
 - Do NOT `systemctl --user enable hyprland-session.target` itself — it is
   started by autostart, not at user-manager boot.
+- Portals can be D-Bus-activated before the env import runs; they then
+  have no `WAYLAND_DISPLAY` (gtk portal crash-loops, termfilechooser's
+  kitty fails with "DISPLAY environment variable is missing", so file
+  dialogs never open). Autostart therefore stops the portal units after
+  the import; D-Bus re-activates them on demand with the right env. Live
+  fix: `systemctl --user restart xdg-desktop-portal xdg-desktop-portal-termfilechooser`.

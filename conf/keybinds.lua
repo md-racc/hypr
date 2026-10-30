@@ -44,7 +44,7 @@ hl.bind("SUPER + SHIFT + SPACE", function()
         for i, w in ipairs(floating) do
             if w.address == active.address then target = floating[i + 1] end
         end
-        target = target or tiled[1]
+        target = target or tiled[1] or floating[1]
     else
         target = floating[1]
     end
@@ -88,9 +88,6 @@ hl.bind("SUPER + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
 -- Move/resize with mouse
 hl.bind("SUPER + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
-
--- Session
-hl.bind("SUPER + M", hl.dsp.exec_cmd("~/.config/hypr/scripts/session-exit"))
 
 -- Volume
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"),   { locked = true, repeating = true })
@@ -138,6 +135,7 @@ hl.define_submap("resize", function()
     hl.bind("SUPER + W", hl.dsp.submap("reset"), { release = true, transparent = true })
     hl.bind("W",         hl.dsp.submap("reset"), { release = true, transparent = true })
     hl.bind("Escape",    hl.dsp.submap("reset"))
+    hl.bind("catchall",  hl.dsp.submap("reset"), { catchall = true, ignore_mods = true })
 end)
 
 -------------------------
@@ -152,14 +150,21 @@ hl.define_submap("power", function()
         hl.exec_cmd("~/.config/hypr/scripts/lockscreen away")
         hl.dispatch(hl.dsp.submap("reset"))
     end)
-    hl.bind("SUPER + P", hl.dsp.exec_cmd("systemctl poweroff"))
-    hl.bind("SUPER + R", hl.dsp.exec_cmd("systemctl reboot"))
+    hl.bind("SUPER + P", function()
+        hl.dispatch(hl.dsp.submap("reset"))
+        hl.exec_cmd("systemctl poweroff")
+    end)
+    hl.bind("SUPER + R", function()
+        hl.dispatch(hl.dsp.submap("reset"))
+        hl.exec_cmd("systemctl reboot")
+    end)
     hl.bind("SUPER + S", function()
         hl.exec_cmd("systemctl suspend")
         hl.dispatch(hl.dsp.submap("reset"))
     end)
     hl.bind("SUPER + O", hl.dsp.exec_cmd("~/.config/hypr/scripts/session-exit"))
     hl.bind("Escape", hl.dsp.submap("reset"))
+    hl.bind("catchall", hl.dsp.submap("reset"), { catchall = true, ignore_mods = true })
 end)
 
 -- Lockscreen: Enter starts a fingerprint scan (scripts/lockscreen fprint).

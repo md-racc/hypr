@@ -59,7 +59,7 @@ Same keys, per-machine meaning. Defined in `conf/machine/keybinds.lua`.
 | `SUPER+Q` | Close window |
 | `SUPER+F` | Fullscreen (maximize style, keeps bars) |
 | `SUPER+Space` | Toggle floating |
-| `SUPER+SHIFT+Space` | Cycle focus tiled → each floating window → back to tiled (current workspace) |
+| `SUPER+SHIFT+Space` | Cycle focus tiled → each floating window → back to tiled (wraps if only floating windows exist) |
 | `SUPER+S` | Toggle split axis (side-by-side ↔ stacked) |
 | `SUPER+SHIFT+S` | Rotate split 90° (windows carried around the rotation) |
 | `SUPER+SHIFT+E` | Reset all splits on workspace to even (dwindle-calculated sizes) |
@@ -196,8 +196,6 @@ Fn-lock is on (or hold Fn).
 | `F2` | Reboot |
 | `F3` | Suspend (ends away mode first) |
 | `F4` | Away mode (as `SUPER+X` → `SUPER+A`; already locked, so it just blocks suspend/lid and turns the screens off) |
-| `SUPER+SHIFT+P` | Power off |
-| `SUPER+SHIFT+R` | Reboot |
 
 ---
 
@@ -205,7 +203,6 @@ Fn-lock is on (or hold Fn).
 
 | Key | Action |
 |-----|--------|
-| `SUPER+M` | Exit Hyprland session (stops systemd session units first) |
 | `SUPER+SHIFT+C` | Reload config (`hyprctl reload`) |
 
 ---
@@ -219,8 +216,8 @@ Volume repeats while held and works on the lock screen.
 | `VolumeUp/Down` | Volume ±5% |
 | `Mute` | Toggle mute |
 | `MicMute` | Toggle mic mute |
-| `MediaPlay/Pause` | Play/pause (`playerctl` — **not installed yet**) |
-| `MediaNext/Prev` | Next / previous track (same caveat) |
+| `MediaPlay/Pause` | Play/pause (`playerctl`) |
+| `MediaNext/Prev` | Next / previous track (`playerctl`) |
 
 ---
 

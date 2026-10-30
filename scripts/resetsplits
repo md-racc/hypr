@@ -10,11 +10,11 @@ orig=$(hyprctl activewindow -j 2>/dev/null | jq -r '.address // empty' || true)
 
 batch=""
 while read -r addr; do
-    batch+="dispatch focuswindow address:$addr ; dispatch layoutmsg splitratio 1.0 exact ; "
+    batch+="dispatch hl.dsp.focus({ window = \"address:$addr\" }) ; dispatch hl.dsp.layout(\"splitratio 1.0 exact\") ; "
 done < <(hyprctl clients -j |
     jq -r --argjson ws "$ws" \
        '.[] | select(.workspace.id == $ws and .floating == false) | .address')
 
-[ -n "$orig" ] && batch+="dispatch focuswindow address:$orig"
+[ -n "$orig" ] && batch+="dispatch hl.dsp.focus({ window = \"address:$orig\" })"
 batch="${batch% ; }"
 [ -n "$batch" ] && hyprctl --batch "$batch" >/dev/null

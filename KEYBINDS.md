@@ -46,7 +46,7 @@ Same keys, per-machine meaning. Defined in `conf/machine/keybinds.lua`.
 | `SUPER+P` | Task manager (`kitty btop`) | same |
 | `SUPER+T` | Editor (`kitty nvim`) | same |
 | `SUPER+O` | Notes (`obsidian`) | same |
-| `SUPER+C` | Calculator (`qalculate-gtk`) | Network menu (`netmenu`) |
+| `SUPER+C` | — | Network menu (`netmenu`) |
 | `SUPER+Z` | — | Toggle eww bar |
 | `ALT+BrightnessUp/Down` | — | Keyboard backlight ±1 |
 
@@ -58,8 +58,8 @@ Same keys, per-machine meaning. Defined in `conf/machine/keybinds.lua`.
 |-----|--------|
 | `SUPER+Q` | Close window |
 | `SUPER+F` | Fullscreen (maximize style, keeps bars) |
-| `SUPER+Space` | Toggle floating |
-| `SUPER+SHIFT+Space` | Cycle focus tiled → each floating window → back to tiled (wraps if only floating windows exist) |
+| `SUPER+Space` | Cycle focus tiled → each floating window → back to tiled (wraps if only floating windows exist) |
+| `SUPER+SHIFT+Space` | Toggle floating |
 | `SUPER+S` | Toggle split axis (side-by-side ↔ stacked) |
 | `SUPER+SHIFT+S` | Rotate split 90° (windows carried around the rotation) |
 | `SUPER+SHIFT+E` | Reset all splits on workspace to even (dwindle-calculated sizes) |
@@ -149,23 +149,19 @@ its loupe, enhance, censor, OCR, colour, QR and pin tools) are documented in
 | `SHIFT+Print` | Active window → clipboard |
 | `SUPER+Print` | Area → clipboard + file (`~/documents/pictures/screenshots/`) |
 | `SUPER+SHIFT+Print` | Active window → clipboard + file |
-| `SUPER+N` | Annotate the last screenshot (`screenie edit last --mode annotate`) |
-| `SUPER+G` | OCR the most recent image (`screenie edit --result text`), copy extracted text |
+| `SUPER+G` | Open the last screenshot (`screenie edit last`) with all editor tools available |
+| `SUPER+SHIFT+G` | Annotate the last screenshot (`screenie edit last --mode annotate`) |
 
 Every screenshot is kept in `$XDG_RUNTIME_DIR/screenie/` with its
-project (clipboard-only shots too), so `SUPER+N` reopens the most recent
+project (clipboard-only shots too), so `SUPER+SHIFT+G` reopens the most recent
 shot of either kind in screenie's picker, in Annotate, with its earlier
 censors and annotations still editable; every other tool (censor,
 filter, OCR, pin…) is there too. `Enter` copies the result. Does nothing
 until a screenshot has been taken this login.
 
-`SUPER+G` replaces [`textgrab`](https://gitea.lan/mdracc/textgrab): it
-opens the most recent image in screenie's picker, the image on the
-clipboard (from screenie or any other app; a screenie shot reopens with
-its layers) or, with none there, the last screenshot. The box starts on
-the whole image; drag a region to narrow it, then `Enter` OCRs it,
-copies the text and shows a preview in a notification. Inside the
-picker of a fresh shot, `y` OCRs the box directly.
+`SUPER+G` opens the last screenshot in screenie's picker with its layers
+still editable. All tools are available, including annotate, censor,
+filter, OCR and pin. Inside the picker, `y` OCRs the box directly.
 
 ---
 

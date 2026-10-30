@@ -15,18 +15,15 @@ hl.bind("SUPER + TAB",    hl.dsp.exec_cmd("~/.config/hypr/scripts/window-switche
 hl.bind("SUPER + X",      hl.dsp.submap("power"))
 hl.bind("SUPER + W",      hl.dsp.submap("resize"))
 
--- Annotate last screenshot, its layers still editable (see Screenshots below)
-hl.bind("SUPER + N", hl.dsp.exec_cmd("~/.cargo/bin/screenie edit last --mode annotate"))
-
 -- Window management
 hl.bind("SUPER + Q",         hl.dsp.window.close())
 hl.bind("SUPER + F",         hl.dsp.window.fullscreen({ mode = 1 }))
-hl.bind("SUPER + SPACE",     hl.dsp.window.float({ action = "toggle" }))
+hl.bind("SUPER + SHIFT + SPACE", hl.dsp.window.float({ action = "toggle" }))
 
 -- Cycle focus tiled → floating 1 → floating 2 → … → tiled (current workspace).
 -- Directional focus never crosses from tiled to floating, so this is the bridge.
 -- Back to tiled lands on the most recently focused tiled window.
-hl.bind("SUPER + SHIFT + SPACE", function()
+hl.bind("SUPER + SPACE", function()
     local active = hl.get_active_window()
     local ws = active and active.workspace or hl.get_active_workspace()
     if not ws then return end
@@ -116,9 +113,9 @@ hl.bind("SHIFT + Print",         hl.dsp.exec_cmd(SCREENIE .. " shot"))
 hl.bind("SUPER + Print",         hl.dsp.exec_cmd(SCREENIE .. SHOTS))
 hl.bind("SUPER + SHIFT + Print", hl.dsp.exec_cmd(SCREENIE .. " shot" .. SHOTS))
 
--- OCR the most recent image (the clipboard's, else the last shot): drag a
--- region or keep the whole image; Enter copies the text and notifies
-hl.bind("SUPER + G", hl.dsp.exec_cmd(SCREENIE .. " edit --result text"))
+-- Open the last screenshot with all editor tools available.
+hl.bind("SUPER + G", hl.dsp.exec_cmd(SCREENIE .. " edit last"))
+hl.bind("SUPER + SHIFT + G", hl.dsp.exec_cmd(SCREENIE .. " edit last --mode annotate"))
 
 -------------------------
 ---- RESIZE SUBMAP ------

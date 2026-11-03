@@ -16,6 +16,7 @@
 - [Special Workspace (Scratchpad)](#special-workspace-scratchpad)
 - [Mouse](#mouse)
 - [Screenshots](#screenshots)
+- [Macros — `again` (zion)](#macros--again-zion)
 - [Power — `SUPER+X`](#power--superx)
 - [Session](#session)
 - [Volume & Media](#volume--media)
@@ -162,6 +163,22 @@ until a screenshot has been taken this login.
 `SUPER+G` opens the last screenshot in screenie's picker with its layers
 still editable. All tools are available, including annotate, censor,
 filter, OCR and pin. Inside the picker, `y` OCRs the box directly.
+
+---
+
+## Macros — `again` (zion)
+
+[`again`](https://gitea.lan/mdracc/again) records and replays keyboard input (evdev → uinput),
+installed to `~/.local/bin`. Defined in `conf/machine/keybinds.lua`, with both Keychron K3 Max
+interfaces passed as `--device`. Needs the device permissions from again's `docs/permissions.md`.
+
+| Key | Action |
+|-----|--------|
+| `SUPER+SHIFT+.` | Start recording; press again to stop and keep it as the latest macro |
+| `SUPER+.` | Play the latest macro once (waits until you release the keys) |
+| `SUPER+Escape` | Cancel recording or playback (releases any keys it holds) |
+
+Pauses replay literally. Failures from a binding are silent: run `again status` in a terminal.
 
 ---
 

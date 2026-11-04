@@ -169,17 +169,17 @@ filter, OCR and pin. Inside the picker, `y` OCRs the box directly.
 ## Macros — `again` (zion)
 
 [`again`](https://gitea.lan/mdracc/again) records and replays keyboard input (evdev → uinput),
-installed to `~/.local/bin`. Defined in `conf/machine/keybinds.lua`, with both Keychron K3 Max
-interfaces passed as `--device`. Needs the device permissions from again's `docs/permissions.md`.
+installed to `~/.local/bin`. Defined in `conf/machine/keybinds.lua`. Keyboards are autodetected;
+needs the device permissions from again's `docs/permissions.md`.
 
 | Key | Action |
 |-----|--------|
 | `SUPER+SHIFT+.` | Start recording; press again to stop and keep it as the latest macro |
-| `SUPER+.` | Play the latest macro once (waits until you release the keys) |
+| `SUPER+.` | Play the latest macro once, idle pauses at 2x and capped at 1 s (waits until you release the keys) |
 | `SUPER+Escape` | Cancel recording or playback (releases any keys it holds) |
 
-Pauses replay literally. Failures from a binding are silent: run `again status` in a terminal.
-
+Pressing any key during playback also aborts it. Key holds replay exactly; only idle pauses are
+paced. Notifications come from `~/.config/again/hook`; `again status` shows progress.
 ---
 
 ## Power — `SUPER+X`

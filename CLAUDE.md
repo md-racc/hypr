@@ -35,6 +35,11 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   so there's a single path. It's a flock'd supervisor: runs hyprlock, relaunches
   it on any non-zero exit (crash), and on exit 0 (unlocked) turns the displays
   on. Needs `misc:allow_session_lock_restore = true` (appearance.lua).
+  **If Hyprland itself crashes**, start-hyprland restarts it `--safe-mode
+  --locked`: safe mode ignores our config, so restore is off and every
+  relaunch is denied ("we got yeeten", rc=1). `relock_prep` follows the new
+  instance signature and sets the option via `hyprctl eval` before each
+  relaunch (2026-11-05: looped 3h behind the lockdead screen until a reboot).
   **Children must not inherit the lock fd** (`9>&-`): `rbw lock` once started
   rbw-agent, which held the flock forever, and every later lock became a
   silent no-op.

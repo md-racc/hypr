@@ -5,8 +5,9 @@
 #                       Supervises hyprlock until you unlock, then turns the
 #                       displays back on. Idempotent: a second call is a no-op.
 #   lockscreen away     Lock for long-running work: sleep AND the lid switch are
-#                       inhibited until unlock, displays go off. Any key wakes
-#                       them (misc:key_press_enables_dpms).
+#                       inhibited until unlock, displays go off (not on NVIDIA:
+#                       see can_blank). Any key wakes them
+#                       (misc:key_press_enables_dpms).
 #   lockscreen resume   hypridle's after_sleep_cmd: displays on.
 #   lockscreen fprint   One fingerprint scan; a match unlocks hyprlock (SIGUSR1).
 #                       Bound to Enter while locked (LOCKSCREEN_ENTER in
@@ -45,6 +46,12 @@ FPRINT_TIMEOUT=10
 dpms()       { hyprctl dispatch "hl.dsp.dpms({action = \"$1\"})" >/dev/null 2>&1 8>&- 9>&-; }
 enter_bind() { hyprctl eval "LOCKSCREEN_ENTER:set_enabled($1)" >/dev/null 2>&1 8>&- 9>&-; }
 has_fprint() { command -v fprintd-verify >/dev/null; }
+# DPMS off while the session is locked makes Hyprland 0.57 + aquamarine on
+# NVIDIA exit uncleanly within a second: no core, no crash report, and
+# start-hyprland restarts it in safe mode (zion 2026-11-05 09:18 and 18:03,
+# 2026-11-06 08:18; upstream: aquamarine#483/#475, omarchy#17872). Every DPMS
+# off in this script is while locked, so skip it there until that is fixed.
+can_blank()  { [[ ! -e /proc/driver/nvidia/version ]]; }
 arm() {                                        # lock-only binds on/off
     hyprctl eval "LOCKSCREEN_POWER($1)" >/dev/null 2>&1 8>&- 9>&-
     if [[ $1 == false ]] || has_fprint; then enter_bind "$1"; fi
@@ -142,6 +149,7 @@ away() {
     # works (see the script's header). No-op at home and on machines without it.
     "${0%/*}/hotspot-handoff" 7>&- 8>&- 9>&- &   # 7 = power() lock when away comes from F4: never hold it for the 2-min rescan
 
+    can_blank || return 0
     for _ in $(seq 50); do pgrep -x hyprlock >/dev/null && break; sleep 0.2; done
     sleep 0.5
     dpms off

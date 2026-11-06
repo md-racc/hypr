@@ -58,6 +58,28 @@ locked() {
     [[ $ino ]] && grep -q " FLOCK .* $dev:$ino " /proc/locks
 }
 
+# Before relaunching hyprlock. If *Hyprland* crashed (not just hyprlock),
+# start-hyprland restarts it with --safe-mode --locked: the session comes back
+# locked, but safe mode loads Hyprland's recovery config, not ours, so
+# allow_session_lock_restore is false and every new hyprlock is denied
+# ("we got yeeten", rc=1). This loop then spun behind the lockdead screen until
+# a reboot (2026-11-05, twice; 3h the first time). So: follow the new instance
+# (our HYPRLAND_INSTANCE_SIGNATURE names the dead one; the restart reuses our
+# WAYLAND_DISPLAY) and turn restore back on. Idempotent on a plain hyprlock crash.
+relock_prep() {
+    if ! hyprctl version >/dev/null 2>&1 8>&- 9>&-; then
+        local sig
+        sig=$(hyprctl instances 2>/dev/null 8>&- 9>&- | awk -v wd="${WAYLAND_DISPLAY:-}" '
+            /^instance /                { s = $2; sub(/:$/, "", s) }
+            /wl socket:/ && $3 == wd    { print s }' | tail -1)
+        if [[ $sig ]]; then
+            export HYPRLAND_INSTANCE_SIGNATURE=$sig
+            logger -t lockscreen "Hyprland restarted; following instance $sig"
+        fi
+    fi
+    hyprctl eval 'hl.config({ misc = { allow_session_lock_restore = true } })' >/dev/null 2>&1 8>&- 9>&-
+}
+
 lock() {
     exec 9>"$LOCKFILE"
     flock -n 9 || exit 0                       # already locked
@@ -88,6 +110,7 @@ lock() {
         ((rc == 0)) && break
         logger -t lockscreen "hyprlock exited rc=$rc without unlocking; relaunching"
         ((SECONDS - started < 3)) && sleep 2   # dying on startup: back off
+        relock_prep
     done
 
     arm false

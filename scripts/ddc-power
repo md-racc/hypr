@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# ddc-power off|on — monitors off/on over DDC/CI (VCP 0xD6), not through Hyprland.
+#
+# Why: on zion (NVIDIA), Hyprland 0.57 + aquamarine 0.16 exits uncleanly about
+# a second after a DPMS off (or the DPMS on after resume) while hyprlock holds
+# the lock. See CLAUDE.md, "No DPMS off while locked on NVIDIA". DDC power
+# lives in the monitor: the GPU keeps scanning out, the connector stays up,
+# and Hyprland sees no change (verified 2026-11-07 on both zion panels: no
+# hotplug, both wake on D6=1).
+#
+# off: D6=04 (DPM off); a panel that ignores it gets D6=05 ("turn off display").
+#      The Acer GF246 only supports 05, the ASUS VG247Q1A goes to standby on 04.
+#      The buses it turned off are recorded, so `on` is instant and a no-op
+#      when nothing is off (it's called on every unlock and resume).
+# on:  D6=01 on each recorded bus, retried: a sleeping panel may miss the
+#      first write.
+# Wakes only via `on`: Hyprland's key_press_enables_dpms doesn't see DDC state.
+# --noverify everywhere: these panels fail ddcutil's read-back verification
+# (DDCRC_VERIFY) even when the write took effect.
+# No-op (exit 0) without ddcutil or i2c access.
+set -uo pipefail
+
+RUN="${XDG_RUNTIME_DIR:-/run/user/$UID}"
+STATE="$RUN/ddc-power.off"           # buses turned off, one per line
+LOCK="$RUN/ddc-power.lock"
+
+command -v ddcutil >/dev/null || exit 0
+exec 6>"$LOCK"; flock -w 20 6 || exit 0   # ddcutil can't share a bus; serialize us
+
+d6() { ddcutil --bus "$1" getvcp D6 --terse 2>/dev/null | awk '{print $NF}'; }   # x01 on, x02/x04 off
+set_d6() { ddcutil --bus "$1" setvcp D6 "$2" --noverify >/dev/null 2>&1; }
+
+off() {
+    local bus
+    : > "$STATE"
+    for bus in $(ddcutil detect --terse 2>/dev/null | sed -n 's|.*I2C bus: */dev/i2c-\([0-9]*\).*|\1|p'); do
+        set_d6 "$bus" 04
+        [[ $(d6 "$bus") == x01 ]] && set_d6 "$bus" 05
+        [[ $(d6 "$bus") != x01 ]] && echo "$bus" >> "$STATE"
+    done
+}
+
+on() {
+    [[ -s $STATE ]] || exit 0
+    local bus tries buses left=()
+    mapfile -t buses < "$STATE"
+    # Wake every panel first (~0.3-0.9s a write), then verify: reading a panel
+    # that is still waking up takes seconds (3.6s on the Acer).
+    for bus in "${buses[@]}"; do set_d6 "$bus" 01; done
+    for bus in "${buses[@]}"; do
+        for tries in 1 2 3 4; do
+            [[ $(d6 "$bus") == x01 ]] && continue 2
+            set_d6 "$bus" 01
+            sleep 0.5
+        done
+        left+=("$bus"); logger -t ddc-power "bus $bus did not wake after $tries tries"
+    done
+    printf '%s\n' "${left[@]}" | grep . > "$STATE" || : > "$STATE"
+}
+
+case ${1:-} in
+    off) off ;;
+    on)  on ;;
+    *)   echo "usage: ddc-power off|on" >&2; exit 2 ;;
+esac

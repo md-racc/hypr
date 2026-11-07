@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# hypr-crash-logs — keep the log of every Hyprland instance that died.
+#
+# Hyprland logs only to $XDG_RUNTIME_DIR/hypr/<signature>/hyprland.log (tmpfs).
+# When it dies uncleanly the directory stays until reboot, start-hyprland
+# restarts it in safe mode, and the next hard reset wipes the only evidence:
+# none of the 2026-11-05/06 crashes left a log. This copies the log of each
+# instance that died (hyprland.lock left behind, its pid gone) to
+# ~/.local/state/hypr-crashes/ (once per instance; newest $KEEP kept).
+#
+# Run by hypridle.service's ExecStartPre (systemd/hypridle.service.d/: hypridle
+# dies with the compositor and is restarted by systemd) and by scripts/lockscreen
+# when it finds Hyprland restarted behind the lock. Idempotent, quiet, never fails.
+set -uo pipefail
+
+RUN="${XDG_RUNTIME_DIR:-/run/user/$UID}"
+DEST="${XDG_STATE_HOME:-$HOME/.local/state}/hypr-crashes"
+KEEP=20
+MAX_BYTES=$((8 * 1024 * 1024))   # tail of a long session is what matters
+
+for dir in "$RUN"/hypr/*/; do
+    dir=${dir%/}
+    sig=${dir##*/}
+    [[ -f $dir/hyprland.log ]] || continue
+    # A clean exit removes hyprland.lock (and .socket.sock) but leaves the log;
+    # only a death leaves the lock behind.
+    [[ -f $dir/hyprland.lock ]] || continue
+    pid=$(head -n1 "$dir/hyprland.lock" 2>/dev/null)
+    # alive: a Hyprland process with that pid (comm is "Hyprland")
+    [[ $pid =~ ^[0-9]+$ && $(cat "/proc/$pid/comm" 2>/dev/null) == Hyprland ]] && continue
+    compgen -G "$DEST/*_$sig.log" >/dev/null && continue    # saved already
+
+    mkdir -p "$DEST" && chmod 700 "$DEST"
+    out="$DEST/$(date -r "$dir/hyprland.log" +%Y%m%d-%H%M%S)_$sig.log"
+    tail -c "$MAX_BYTES" "$dir/hyprland.log" > "$out" 2>/dev/null || continue
+    logger -t hypr-crash-logs "Hyprland instance $sig (pid $pid) is gone; log saved to $out"
+done
+
+# prune: newest $KEEP (names start with the timestamp, so the glob sorts oldest first)
+shopt -s nullglob
+logs=("$DEST"/*.log)
+((${#logs[@]} > KEEP)) && rm -f -- "${logs[@]:0:${#logs[@]}-KEEP}"
+exit 0

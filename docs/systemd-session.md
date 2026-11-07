@@ -35,6 +35,7 @@ shutdown ordering — without adopting uwsm. The launcher stays
 | unit-failed-notify@.service | `systemd/` | `OnFailure=` target: journal line (`journalctl --user -t unit-failed`), marker in `~/.local/state/unit-failed/`, then a best-effort critical toast (`scripts/unit-failed-notify`) |
 | failed-units-check.timer/.service | `systemd/` | 2 min after login + hourly: every failed system and user unit, reported once per failure; markers of recovered units are removed |
 | fnott.service.d/restart.conf | `systemd/` (drop-in, symlinked) | restart fnott after a compositor crash |
+| hypridle.service.d/crash-logs.conf | `systemd/` (drop-in, symlinked) | `ExecStartPre`: `scripts/hypr-crash-logs` saves a crashed Hyprland's log (`/run` only) to `~/.local/state/hypr-crashes/` |
 
 **Failures are loud, not loops.** nextcloud-client, cliphist-* and fnott (drop-in) use `RestartMode=direct`
 (an auto-restart skips the failed state, so `OnFailure=` doesn't fire per retry) with a start limit

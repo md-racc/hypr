@@ -1,0 +1,11 @@
+[Unit]
+Description=Report failed system and user units, after login and hourly
+# catches what OnFailure= can't: system units (paccache, restic) and anything that failed while no
+# notification daemon was up
+
+[Timer]
+OnStartupSec=2min
+OnUnitActiveSec=1h
+
+[Install]
+WantedBy=timers.target

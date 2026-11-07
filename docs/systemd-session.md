@@ -31,7 +31,19 @@ shutdown ordering — without adopting uwsm. The launcher stays
 | fnott.service | package | notifications (Type=dbus) |
 | cliphist-text.service | `systemd/` | clipboard history (text) |
 | cliphist-image.service | `systemd/` | clipboard history (image) |
-| nextcloud-client.service | `systemd/` | file sync |
+| nextcloud-client.service | `systemd/` | file sync: `scripts/nc-sync` (sync at start, after local changes, every 5 min; `NC_URL`/`NC_USER`/`NC_PASSWORD` from `~/.config/nextcloud-sync.env`) |
+| unit-failed-notify@.service | `systemd/` | `OnFailure=` target: journal line (`journalctl --user -t unit-failed`), marker in `~/.local/state/unit-failed/`, then a best-effort critical toast (`scripts/unit-failed-notify`) |
+| failed-units-check.timer/.service | `systemd/` | 2 min after login + hourly: every failed system and user unit, reported once per failure; markers of recovered units are removed |
+| fnott.service.d/restart.conf | `systemd/` (drop-in, symlinked) | restart fnott after a compositor crash |
+
+**Failures are loud, not loops.** nextcloud-client, cliphist-* and fnott (drop-in) use `RestartMode=direct`
+(an auto-restart skips the failed state, so `OnFailure=` doesn't fire per retry) with a start limit
+(nextcloud: 10 in 15 min; the others: 10 in 2 min) and `OnFailure=unit-failed-notify@%n.service`.
+Before this, a missing env file failed nextcloud-client 40k times in a week (`RestartSec=5` escapes the
+default 5-in-10 s limit) while `systemctl --user --failed` stayed empty. nc-sync exits 3 after 6 failed
+syncs in a row while online (`RestartPreventExitStatus=3`). List the marker dir (or wait for the toast /
+the hourly check) to see what is broken; `systemctl --user reset-failed <unit> && systemctl --user start <unit>`
+after fixing it.
 
 Repo units are enabled **by absolute path** (`systemctl --user enable
 ~/.config/hypr/systemd/foo.service`), which symlinks back into the repo —

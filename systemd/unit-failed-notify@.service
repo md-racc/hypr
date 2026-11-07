@@ -1,0 +1,8 @@
+[Unit]
+Description=Record and announce the failure of %i
+# OnFailure= target for the session units (and run by failed-units-check). Never fails itself in a way
+# that matters: the journal line and the marker come first, the notification is best effort.
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/hypr/scripts/unit-failed-notify --user %i

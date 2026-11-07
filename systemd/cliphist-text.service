@@ -3,10 +3,17 @@ Description=Clipboard history watcher (text)
 PartOf=graphical-session.target
 After=graphical-session.target
 ConditionEnvironment=WAYLAND_DISPLAY
+# a compositor crash ends wl-paste (broken pipe); retry slowly enough to outlast the restart
+StartLimitIntervalSec=2min
+StartLimitBurst=10
+OnFailure=unit-failed-notify@%n.service
 
 [Service]
 ExecStart=/usr/bin/wl-paste --type text --watch cliphist store
+# direct: an auto-restart skips the failed state, so OnFailure= fires only when the start limit gives up
+RestartMode=direct
 Restart=on-failure
+RestartSec=2
 
 [Install]
 WantedBy=graphical-session.target

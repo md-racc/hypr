@@ -44,16 +44,6 @@ hl.window_rule({
 -- File manager
 hl.window_rule({ name = "nemo-float", match = { class = "nemo" }, float = true })
 
--- Scratchpad
-hl.window_rule({
-    name      = "scratchpad-float",
-    match     = { class = "scratchpad" },
-    float     = true,
-    size      = "900 600",
-    center    = true,
-    workspace = "special silent",
-})
-
 -- Browser extensions
 hl.window_rule({
     name  = "bitwarden-popup",

@@ -117,13 +117,8 @@ Mouse alternative: `SUPER+RightMouse` drag (see [Mouse](#mouse)).
 
 | Key | Action |
 |-----|--------|
-| `` SUPER+` `` | Drop-down terminal: show/hide the special workspace; starts the scratchpad terminal first if it isn't running (`scripts/scratchpad`) |
+| `` SUPER+` `` | Show/hide the special workspace |
 | `` SUPER+SHIFT+` `` | Move window to special workspace |
-
-The scratchpad terminal is kitty with class `scratchpad` attached to tmux's
-`scratch` session (the same as tmux `prefix t`, so its shell survives
-toggles). Windows with that class float 900x600 centered on the special
-workspace automatically (`rules.lua`).
 
 ---
 

@@ -67,8 +67,7 @@ hl.bind("SUPER + SHIFT + K", hl.dsp.exec_cmd("~/.config/hypr/scripts/movewindow 
 hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd("~/.config/hypr/scripts/movewindow r"))
 
 -- Special workspace (scratchpad)
--- SUPER+` = drop-down terminal (kitty class scratchpad on tmux's `scratch`; started on first use)
-hl.bind("SUPER + grave",         hl.dsp.exec_cmd("~/.config/hypr/scripts/scratchpad"))
+hl.bind("SUPER + grave",         hl.dsp.workspace.toggle_special("special"))
 hl.bind("SUPER + SHIFT + grave", hl.dsp.window.move({ workspace = "special" }))
 
 -- Workspaces 1-10, and move window to workspace

@@ -13,4 +13,11 @@ cp "$repo_root/hyprland.lua" "$scratch/hyprland.lua" 2>/dev/null || true
 rm -f "$scratch/conf/machine"
 ln -s "$scratch/conf/machines/$machine" "$scratch/conf/machine"
 
+# --verify-config has no event loop and segfaults on hl.timer (Hyprland 0.57.1;
+# keybinds.lua's lockscreen wake guard), so stub it for the check.
+{
+    echo 'hl.timer = function() return { set_enabled = function() end } end'
+    cat "$scratch/hyprland.lua"
+} > "$scratch/hyprland.lua.new" && mv "$scratch/hyprland.lua.new" "$scratch/hyprland.lua"
+
 Hyprland --config "$scratch/hyprland.lua" --verify-config

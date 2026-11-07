@@ -62,7 +62,8 @@ an empty field for the fingerprint path.
 
 Still started from autostart: eww (per-machine window set; zion opens both
 windows with one `eww open-many`), wallpaper-restore (one-shot),
-gnome-keyring (dbus-activated anyway).
+gnome-keyring on rocinante only (its gnome-keyring-daemon.socket is masked;
+zion's socket-activated unit is the keyring there).
 
 ## New machine / laptop runbook
 

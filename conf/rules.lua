@@ -4,20 +4,6 @@
 -- Gnome apps
 hl.window_rule({ name = "gnome-float", match = { class = "org.gnome.*" }, float = true })
 
-hl.window_rule({
-    name  = "calculator-position",
-    match = { class = "org.gnome.Calculator" },
-    size  = "400 620",
-    move  = "6 453",
-})
-
-hl.window_rule({
-    name  = "calendar-position",
-    match = { class = "org.gnome.Calendar" },
-    size  = "360 600",
-    move  = "6 474",
-})
-
 -- Media
 hl.window_rule({
     name   = "mpv-float",
@@ -26,8 +12,6 @@ hl.window_rule({
     size   = "1280 720",
     center = true,
 })
-
-hl.window_rule({ name = "spotify-tile", match = { class = "^(Spotify)$" }, tile = true })
 
 -- System tools
 hl.window_rule({ name = "portal-float",    match = { class = "xdg-desktop-portal-gtk" }, float = true })
@@ -39,9 +23,6 @@ hl.window_rule({
     size   = "1100 650",
     center = true,
 })
-
--- File manager
-hl.window_rule({ name = "nemo-float", match = { class = "nemo" }, float = true })
 
 -- Browser extensions
 hl.window_rule({

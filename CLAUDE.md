@@ -11,7 +11,7 @@ have no Lua config and stay hyprlang `.conf`.
   (`appearance.lua`, `keybinds.lua`, `rules.lua`) applies everywhere;
   per-machine dirs hold `monitors`, `env`, `programs`, `autostart`, `input`,
   extra keybinds, and `hyprlock`/`hypridle` configs.
-- Machines: **zion** — desktop, DP-3 (1080p@165, VRR fullscreen-only) +
+- Machines: **zion** — desktop, DP-3 (1080p@165, no VRR: panels aren't capable) +
   HDMI-A-1 (1080p@75), eww clock/workspace widgets. **rocinante** — ThinkPad,
   eDP-1, touchpad gestures, keyboard-backlight binds.
 - Session: launched via `start-hyprland` (not uwsm). Long-running daemons are
@@ -201,5 +201,4 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
 - zion's journal is persistent again since 2026-09-26 (`/var/log/journal`;
   2025-11-12 to 2026-09-26 is a gap). `journalctl -b -N` works for past boots.
   Entries from the last ~30s before a hard reset can still be lost.
-- Known-broken: nothing else on zion. rocinante needs `pacman -S playerctl
-  hyprsunset` on its next visit (media keys / night light until then).
+- Known-broken: nothing.

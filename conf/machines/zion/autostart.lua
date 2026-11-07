@@ -6,5 +6,4 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("~/.config/hypr/scripts/wallpaper-restore")
     -- one client call: separate `eww open`s raced the daemon's socket and each started its own daemon
     hl.exec_cmd("eww open-many clock-win ws-win")
-    hl.exec_cmd("/usr/bin/gnome-keyring-daemon --start --components=secrets,pkcs11,ssh")
 end)

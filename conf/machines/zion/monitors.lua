@@ -1,9 +1,9 @@
 hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@75",  position = "0x0",    scale = 1 })
 hl.monitor({ output = "DP-3",     mode = "1920x1080@165", position = "1920x0", scale = 1 })
 
--- VRR for FreeSync panels — fullscreen apps only, no desktop flicker
+-- No VRR: neither panel reports it (hyprctl monitors: vrrCapable no)
 hl.config({
     misc = {
-        vrr = 2,
+        vrr = 0,
     },
 })

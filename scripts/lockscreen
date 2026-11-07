@@ -73,6 +73,10 @@ locked() {
 # a reboot (2026-11-05, twice; 3h the first time). So: follow the new instance
 # (our HYPRLAND_INSTANCE_SIGNATURE names the dead one; the restart reuses our
 # WAYLAND_DISPLAY) and turn restore back on. Idempotent on a plain hyprlock crash.
+# Also: save the dead instance's log (scripts/hypr-crash-logs; it's on tmpfs
+# and a hard reset loses it), and turn key_press_enables_dpms back on, which
+# safe mode leaves false: after the 2026-11-06 17:43 crash the displays stayed
+# dark through the next resume and no key could wake them.
 relock_prep() {
     if ! hyprctl version >/dev/null 2>&1 8>&- 9>&-; then
         local sig
@@ -83,8 +87,10 @@ relock_prep() {
             export HYPRLAND_INSTANCE_SIGNATURE=$sig
             logger -t lockscreen "Hyprland restarted; following instance $sig"
         fi
+        "${0%/*}/hypr-crash-logs" 8>&- 9>&-
     fi
-    hyprctl eval 'hl.config({ misc = { allow_session_lock_restore = true } })' >/dev/null 2>&1 8>&- 9>&-
+    hyprctl eval 'hl.config({ misc = { allow_session_lock_restore = true, key_press_enables_dpms = true } })' \
+        >/dev/null 2>&1 8>&- 9>&-
 }
 
 lock() {

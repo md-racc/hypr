@@ -43,6 +43,10 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   relaunch is denied ("we got yeeten", rc=1). `relock_prep` follows the new
   instance signature and sets the option via `hyprctl eval` before each
   relaunch (2026-11-05: looped 3h behind the lockdead screen until a reboot).
+  It also sets `key_press_enables_dpms` (safe mode leaves it false: dark
+  displays could not be woken by any key after the 2026-11-06 17:43 crash)
+  and runs `scripts/hypr-crash-logs`. Safe mode still has none of our binds
+  (F1-F4, Enter); log out and back in to get the config back.
   **Children must not inherit the lock fd** (`9>&-`): `rbw lock` once started
   rbw-agent, which held the flock forever, and every later lock became a
   silent no-op.
@@ -164,8 +168,8 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
 ## Known state / pending
 
 - Night light: `hyprsunset.conf` steps 6200K→4500K, 20:00–20:30 (GNV sunset).
-- zion's journal is volatile: `systemd-journal-flush.service` is masked, so
-  logs vanish on reboot (nothing persisted since 2025-11-12). The 2026-09-26
-  black screen after resume is undiagnosed for that reason.
+- zion's journal is persistent again since 2026-09-26 (`/var/log/journal`;
+  2025-11-12 to 2026-09-26 is a gap). `journalctl -b -N` works for past boots.
+  Entries from the last ~30s before a hard reset can still be lost.
 - Known-broken: nothing else on zion. rocinante needs `pacman -S playerctl
   hyprsunset` on its next visit (media keys / night light until then).

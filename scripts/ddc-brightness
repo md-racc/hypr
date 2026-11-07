@@ -10,6 +10,10 @@
 # (buses can move after a hotplug or a driver reload). Monitors are written in parallel with --noverify
 # (each write takes 50-150 ms); one press at a time (flock), so a held key can't pile up writes, and 10%
 # steps keep the EEPROM write count low. Needs /dev/i2c-* access (i2c-dev loaded + uaccess ACL).
+# Fixed DDC sleeps (DDC below): ddcutil's default dynamic sleep tunes the inter-message delay down
+# towards zero, and on zion's NVIDIA I2C both monitors then answer garbage and reset (blank and
+# re-hotplug), even on plain reads. Measured: dynamic, 10 reads -> 2 resets; fixed (spec) sleeps,
+# 16 paced presses -> 0, ~1.3 s a press; doubled sleeps, 18 presses incl. a burst -> 0, ~2.1 s.
 set -uo pipefail
 
 usage() { awk 'NR == 1 { next } !/^#/ { exit } /^#   / { u = 1 } u && /^#$/ { exit } { sub(/^# ?/, ""); print }' "$0"; }
@@ -30,9 +34,10 @@ RUN=${XDG_RUNTIME_DIR:-/run/user/$UID}
 CACHE=$RUN/ddc-brightness.buses
 exec 8>"$RUN/ddc-brightness.lock"
 flock 8
+DDC=(ddcutil --disable-dynamic-sleep)
 
 detect() {
-    timeout 15 ddcutil detect --terse 2>/dev/null | awk '
+    timeout 15 "${DDC[@]}" detect --terse 2>/dev/null | awk '
         /^Display/ { bus = ""; sn = "" }
         /I2C bus:/ { bus = $NF; sub(/.*i2c-/, "", bus) }
         /Monitor:/ { sn = $NF; n = split(sn, a, ":"); sn = a[n]; if (bus != "") print bus, sn }
@@ -42,12 +47,12 @@ detect() {
 # step_one <bus> — read, clamp, write; prints the new percent
 step_one() {
     local cur max new
-    read -r cur max < <(timeout 5 ddcutil --bus "$1" getvcp 10 --brief 2>/dev/null | awk '{ print $4, $5 }')
+    read -r cur max < <(timeout 10 "${DDC[@]}" --bus "$1" getvcp 10 --brief 2>/dev/null | awk '{ print $4, $5 }')
     [[ $cur =~ ^[0-9]+$ && $max =~ ^[0-9]+$ && $max -gt 0 ]] || return 1
     if [[ $dir == up ]]; then new=$((cur + step * max / 100)); else new=$((cur - step * max / 100)); fi
     ((new > max)) && new=$max
     ((new < 0)) && new=0
-    ((new == cur)) || timeout 5 ddcutil --bus "$1" --noverify setvcp 10 "$new" >/dev/null 2>&1 || return 1
+    ((new == cur)) || timeout 10 "${DDC[@]}" --bus "$1" --noverify setvcp 10 "$new" >/dev/null 2>&1 || return 1
     echo $((new * 100 / max))
 }
 

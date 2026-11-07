@@ -31,7 +31,7 @@
 | `SUPER+Return` | Terminal (`kitty` + zsh) |
 | `SUPER+B` | Browser (`firefox`) |
 | `SUPER+R` | App launcher (`fuzzel`) |
-| `SUPER+V` | Clipboard history picker (`cliphist` → fuzzel → paste-ready) |
+| `SUPER+V` | Clipboard history picker (`scripts/clip-pick`: cliphist → fuzzel → paste-ready). Images show a thumbnail. In the picker: `Shift+Delete` deletes the entry and reopens, `Ctrl+Shift+Delete` wipes the history (asks first). History is capped at 300 entries |
 | `SUPER+SHIFT+V` | Vaultwarden picker (`~/.local/bin/vw`: rbw → fuzzel, fingerprint unlock) |
 | `SUPER+Tab` | Window switcher (fuzzel list of open windows) |
 

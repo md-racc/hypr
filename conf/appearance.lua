@@ -1,5 +1,5 @@
 -- conf/appearance.lua
--- Converted from conf/appearance.conf. See docs/superpowers/plans/2026-08-27-hyprland-lua-migration.md.
+-- Shared look and behaviour: general, decoration, animations, layouts, misc.
 
 hl.config({
     general = {
@@ -84,7 +84,7 @@ hl.config({
         disable_splash_rendering = true,
         enable_swallow          = true,
         swallow_regex           = "^(kitty)$",
-        -- wake displays from manual dpms-off (away mode) — key-only so desk bumps don't wake
+        -- wake displays from dpms-off (away mode; not on NVIDIA) — key-only so desk bumps don't wake
         key_press_enables_dpms  = true,
         -- scripts/lockscreen relaunches hyprlock (resume, crash); keep the session locked meanwhile
         allow_session_lock_restore = true,

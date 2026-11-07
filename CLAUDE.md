@@ -8,10 +8,11 @@ have no Lua config and stay hyprlang `.conf`.
 
 - `conf/machine` is a **gitignored symlink** to `conf/machines/<hostname>/`,
   created once per machine (`ln -s machines/<host> conf/machine`). Shared config
-  (`appearance.lua`, `keybinds.lua`, `rules.lua`) applies everywhere;
-  per-machine dirs hold `monitors`, `env`, `programs`, `autostart`, `input`,
-  extra keybinds, and `hyprlock`/`hypridle` configs.
-- Machines: **zion** — desktop, DP-3 (1080p@165, VRR fullscreen-only) +
+  (`appearance.lua`, `env.lua`, `programs.lua`, `keybinds.lua`, `rules.lua`)
+  applies everywhere; per-machine dirs hold `monitors`, `env` (machine-only
+  variables, after the shared ones), `autostart`, `input`, extra keybinds, and
+  `hyprlock`/`hypridle` configs.
+- Machines: **zion** — desktop, DP-3 (1080p@165, no VRR: panels aren't capable) +
   HDMI-A-1 (1080p@75), eww clock/workspace widgets. **rocinante** — ThinkPad,
   eDP-1, touchpad gestures, keyboard-backlight binds.
 - Session: launched via `start-hyprland` (not uwsm). Long-running daemons are
@@ -47,6 +48,10 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   displays could not be woken by any key after the 2026-11-06 17:43 crash)
   and runs `scripts/hypr-crash-logs`. Safe mode still has none of our binds
   (F1-F4, Enter); log out and back in to get the config back.
+  **The supervisor runs in its own `systemd-run --scope`**: hypridle aborts
+  seconds after a Hyprland crash, and systemd killed its cgroup with the
+  supervisor and the relaunched hyprlock in it (2026-11-06 08:18, 16:52,
+  17:43: locked with nothing to unlock). Falls back to locking in place.
   **Children must not inherit the lock fd** (`9>&-`): `rbw lock` once started
   rbw-agent, which held the flock forever, and every later lock became a
   silent no-op.
@@ -91,11 +96,13 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   supervisor's, so don't wait on it. On rocinante F1-F4 are media keys
   unless Fn-lock is on.
 - `lockscreen resume`: `after_sleep_cmd`. Displays on: DDC (`scripts/ddc-power
-  on`, no-op unless hypridle turned them off) and DPMS, re-sent for 5s while
-  any output reports `dpmsStatus: 0` (the outputs drop and come back ~1s after
-  resume, so one early dpms on can be lost).
+  on`, no-op unless hypridle turned them off) and, except on NVIDIA (no DPMS
+  while locked, below), DPMS, re-sent for 5s while any output reports
+  `dpmsStatus: 0` (the outputs drop and come back ~1s after resume, so one
+  early dpms on can be lost). hyprlock logs under `journalctl --user -t hyprlock`.
 - Speed: the laptop background is `grim -l 0` (uncompressed PNG, ~50ms; the
-  default compression level took ~1.25s) and hyprlock `animations` are off.
+  default compression level took ~1.25s). hyprlock's fade in/out is on for
+  both machines (the user's choice, 2026-11-07).
   Keep slow calls (e.g. `fprintd-list`, ~460ms) out of the lock and Enter paths.
 - PAM (both machines): hyprlock uses `/etc/pam.d/hyprlock-nofp` (outside the
   repo, installed by hand), pam_unix only. **Never add pam_faillock or
@@ -122,8 +129,9 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   and 16:52) and the DPMS on after a resume (2026-11-06 17:43). Since the
   2026-11-03 upgrade, 4 of 5 DPMS offs under our config crashed; ~7 DPMS
   off/on in safe mode didn't. Upstream aquamarine#483/#475, omarchy#17872,
-  unfixed as of 2026-11-07. So `lockscreen away` skips its `dpms off` where
-  `/proc/driver/nvidia` exists (`can_blank`), and zion's hypridle turns the
+  unfixed as of 2026-11-07. So `lockscreen away` skips its `dpms off` and
+  `lockscreen resume` its `dpms on` where `/proc/driver/nvidia` exists
+  (`can_blank`), and zion's hypridle turns the
   screens off over **DDC/CI** instead (`scripts/ddc-power`: the panel powers
   down, the connector stays up, Hyprland sees nothing; Acer GF246 only takes
   D6=05, ASUS VG247Q1A D6=04; both wake on D6=01; verified 2026-11-07).
@@ -150,9 +158,9 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   (old hyprlang two-token syntax) fails.** `hyprctl dispatch` now expects a
   Lua expression: `hyprctl dispatch 'hl.dsp.<name>(<args>)'` (e.g. `hyprctl
   dispatch 'hl.dsp.exit()'`, `hyprctl dispatch 'hl.dsp.dpms({action = "off"})'`,
-  `hyprctl dispatch 'hl.dsp.window.move({ direction = "l" })'`). This bit
+  `hyprctl dispatch 'hl.dsp.window.move({ direction = "left" })'`). This bit
   every script that shells out to `hyprctl dispatch` (`session-exit`,
-  `movewindow`, `lockscreen`, `window-switcher`, `workspace-send-all`) and
+  `lockscreen`, `window-switcher`) and
   both `hypridle.conf` files' `dpms on`/`off` actions — hypridle itself
   stays hyprlang, but its shelled-out `hyprctl dispatch` calls are
   interpreted by the *live Hyprland instance*, so they need the new syntax
@@ -184,6 +192,9 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
 
 - After config edits: `hyprctl reload && hyprctl configerrors`.
 - Inspect live binds with `hyprctl binds -j | jq`.
+- Window logic for binds goes in `conf/actions.lua` (in-process: `hl.get_windows()`,
+  `hl.dispatch`, errors land in the Hyprland log), not in scripts that round-trip
+  through `hyprctl -j`. Scripts are for things that wait on another program (fuzzel).
 - Commits: conventional style (`feat:`/`fix:`/`chore:`), one logical change
   each, **always pass explicit pathspecs to `git commit`** — the index may
   hold staged deletions that a bare commit would swallow.
@@ -197,5 +208,4 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
 - zion's journal is persistent again since 2026-09-26 (`/var/log/journal`;
   2025-11-12 to 2026-09-26 is a gap). `journalctl -b -N` works for past boots.
   Entries from the last ~30s before a hard reset can still be lost.
-- Known-broken: nothing else on zion. rocinante needs `pacman -S playerctl
-  hyprsunset` on its next visit (media keys / night light until then).
+- Known-broken: nothing.

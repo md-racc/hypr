@@ -28,6 +28,8 @@ for dir in "$RUN"/hypr/*/; do
     pid=$(head -n1 "$dir/hyprland.lock" 2>/dev/null)
     # alive: a Hyprland process with that pid (comm is "Hyprland")
     [[ $pid =~ ^[0-9]+$ && $(cat "/proc/$pid/comm" 2>/dev/null) == Hyprland ]] && continue
+    # nested/test instance (ran inside another compositor): killed, not a session crash
+    grep -q 'Connected to a wayland compositor' "$dir/hyprland.log" && continue
     compgen -G "$DEST/*_$sig.log" >/dev/null && continue    # saved already
 
     mkdir -p "$DEST" && chmod 700 "$DEST"

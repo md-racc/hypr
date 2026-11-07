@@ -19,7 +19,6 @@
 - [Screen Recording](#screen-recording)
 - [Macros — `again` (zion)](#macros--again-zion)
 - [Power — `SUPER+X`](#power--superx)
-- [Session](#session)
 - [Volume & Media](#volume--media)
 - [Brightness](#brightness)
 - [Notifications](#notifications)
@@ -117,13 +116,8 @@ Mouse alternative: `SUPER+RightMouse` drag (see [Mouse](#mouse)).
 
 | Key | Action |
 |-----|--------|
-| `` SUPER+` `` | Drop-down terminal: show/hide the special workspace; starts the scratchpad terminal first if it isn't running (`scripts/scratchpad`) |
+| `` SUPER+` `` | Show/hide the special workspace |
 | `` SUPER+SHIFT+` `` | Move window to special workspace |
-
-The scratchpad terminal is kitty with class `scratchpad` attached to tmux's
-`scratch` session (the same as tmux `prefix t`, so its shell survives
-toggles). Windows with that class float 900x600 centered on the special
-workspace automatically (`rules.lua`).
 
 ---
 
@@ -162,11 +156,8 @@ project (clipboard-only shots too), so `SUPER+SHIFT+G` reopens the most recent
 shot of either kind in screenie's picker, in Annotate, with its earlier
 censors and annotations still editable; every other tool (censor,
 filter, OCR, pin…) is there too. `Enter` copies the result. Does nothing
-until a screenshot has been taken this login.
-
-`SUPER+G` opens the last screenshot in screenie's picker with its layers
-still editable. All tools are available, including annotate, censor,
-filter, OCR and pin. Inside the picker, `y` OCRs the box directly.
+until a screenshot has been taken this login. `SUPER+G` opens the same
+shot in the picker without picking a mode; there, `y` OCRs the box directly.
 
 ---
 
@@ -202,6 +193,7 @@ needs the device permissions from again's `docs/permissions.md`.
 
 Pressing any key during playback also aborts it. Key holds replay exactly; only idle pauses are
 paced. Notifications come from `~/.config/again/hook`; `again status` shows progress.
+
 ---
 
 ## Power — `SUPER+X`
@@ -232,14 +224,6 @@ Fn-lock is on (or hold Fn).
 | `F2` | Reboot |
 | `F3` | Suspend (ends away mode first) |
 | `F4` | Away mode (as `SUPER+X` → `SUPER+A`; already locked, so it just blocks suspend/lid and turns the screens off, except on zion) |
-
----
-
-## Session
-
-| Key | Action |
-|-----|--------|
-| `SUPER+SHIFT+C` | Reload config (`hyprctl reload`) |
 
 ---
 

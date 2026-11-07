@@ -8,8 +8,9 @@
 #                       inhibited until unlock, displays go off (not on NVIDIA:
 #                       see can_blank). Any key wakes them
 #                       (misc:key_press_enables_dpms).
-#   lockscreen resume   hypridle's after_sleep_cmd: displays on (DPMS, re-sent
-#                       until the outputs are back, and DDC: see scripts/ddc-power).
+#   lockscreen resume   hypridle's after_sleep_cmd: displays on (DDC: see
+#                       scripts/ddc-power; and DPMS, re-sent until the outputs
+#                       are back, except on NVIDIA: see can_blank).
 #   lockscreen fprint   One fingerprint scan; a match unlocks hyprlock (SIGUSR1).
 #                       Bound to Enter while locked (LOCKSCREEN_ENTER in
 #                       conf/keybinds.lua, enabled only for the lock's lifetime,
@@ -98,6 +99,16 @@ relock_prep() {
 }
 
 lock() {
+    # Supervise from our own scope, not the caller's cgroup. As hypridle's
+    # lock_cmd we'd live in hypridle.service, and a Hyprland crash takes
+    # hypridle down seconds later: systemd then killed the cgroup, supervisor
+    # and just-relaunched hyprlock included, leaving the session locked with
+    # nothing to unlock it (2026-11-06 08:18, 16:52, 17:43). If the scope can't
+    # be started, or it dies without an unlock, lock here rather than not at all.
+    if [[ -z ${LOCKSCREEN_SCOPED:-} ]]; then
+        LOCKSCREEN_SCOPED=1 systemd-run --user --scope --collect --quiet -- "$0" lock && exit 0
+        locked && exit 0
+    fi
     exec 9>"$LOCKFILE"
     flock -n 9 || exit 0                       # already locked
 
@@ -122,7 +133,9 @@ lock() {
     local rc started
     while :; do
         started=$SECONDS
-        hyprlock --config "$CONF" 9>&-
+        # own journal tag (journalctl --user -t hyprlock), not hypridle's; systemd-cat
+        # execs it, so the rc and `pkill -x hyprlock` still apply to hyprlock itself
+        systemd-cat -t hyprlock hyprlock --config "$CONF" 9>&-
         rc=$?
         ((rc == 0)) && break
         logger -t lockscreen "hyprlock exited rc=$rc without unlocking; relaunching"
@@ -206,6 +219,10 @@ rearm() {
 # before they exist and be lost. Re-send it only while an output reports off, for 5s.
 resume() {
     ddc_on
+    # NVIDIA (zion): no DPMS while locked (see can_blank); the DPMS on here was
+    # the 2026-11-06 17:43 crash. hypridle turns those screens off over DDC, not
+    # DPMS, so ddc_on is the wake, and any key still wakes a DPMS-off output.
+    can_blank || return 0
     dpms on
     for _ in $(seq 10); do
         sleep 0.5

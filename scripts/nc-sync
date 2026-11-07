@@ -57,7 +57,7 @@ do_sync() {
 do_sync   # catch up on whatever changed while we were away
 while true; do
     rc=0
-    inotifywait -r -q -t "$POLL" -e close_write,moved_to,create,delete --exclude "$IGNORE" "$NC_DIR" || rc=$?
+    inotifywait -r -qq -t "$POLL" -e close_write,moved_to,create,delete --exclude "$IGNORE" "$NC_DIR" || rc=$?
     case $rc in
         0) sleep 3 ;;       # local change: let bursts settle
         2) ;;               # timeout: periodic pull

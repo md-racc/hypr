@@ -3,6 +3,7 @@
 -- Lua files don't share variables: anything using `programs` require()s it.
 
 local programs = require("conf.programs")
+local actions  = require("conf.actions")
 
 -- Apps (shared — machine keybinds.lua adds device-specific ones)
 hl.bind("SUPER + RETURN", hl.dsp.exec_cmd(programs.terminal))
@@ -50,7 +51,7 @@ hl.bind("SUPER + SPACE", function()
 end)
 hl.bind("SUPER + S",         hl.dsp.layout("togglesplit"))
 hl.bind("SUPER + SHIFT + S", hl.dsp.layout("rotatesplit"))
-hl.bind("SUPER + SHIFT + E", hl.dsp.exec_cmd("~/.config/hypr/scripts/resetsplits"))
+hl.bind("SUPER + SHIFT + E", actions.reset_splits)
 hl.bind("SUPER + SHIFT + C", hl.dsp.exec_cmd("hyprctl reload"))
 
 -- Focus (HJKL)
@@ -60,10 +61,10 @@ hl.bind("SUPER + K", hl.dsp.focus({ direction = "up" }))
 hl.bind("SUPER + L", hl.dsp.focus({ direction = "right" }))
 
 -- Move windows (HJKL) — crosses to adjacent workspace at horizontal edge
-hl.bind("SUPER + SHIFT + H", hl.dsp.exec_cmd("~/.config/hypr/scripts/movewindow l"))
-hl.bind("SUPER + SHIFT + J", hl.dsp.exec_cmd("~/.config/hypr/scripts/movewindow d"))
-hl.bind("SUPER + SHIFT + K", hl.dsp.exec_cmd("~/.config/hypr/scripts/movewindow u"))
-hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd("~/.config/hypr/scripts/movewindow r"))
+hl.bind("SUPER + SHIFT + H", function() actions.move_window("l") end)
+hl.bind("SUPER + SHIFT + J", function() actions.move_window("d") end)
+hl.bind("SUPER + SHIFT + K", function() actions.move_window("u") end)
+hl.bind("SUPER + SHIFT + L", function() actions.move_window("r") end)
 
 -- Special workspace (scratchpad)
 hl.bind("SUPER + grave",         hl.dsp.workspace.toggle_special("special"))
@@ -74,7 +75,7 @@ for i = 1, 10 do
     local key = i % 10 -- 10 maps to key 0
     hl.bind("SUPER + " .. key,         hl.dsp.focus({ workspace = i }))
     hl.bind("SUPER + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
-    hl.bind("SUPER + CTRL + " .. key,  hl.dsp.exec_cmd("~/.config/hypr/scripts/workspace-send-all " .. i))
+    hl.bind("SUPER + CTRL + " .. key,  function() actions.send_all(i) end)
 end
 
 -- Scroll workspaces

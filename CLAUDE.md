@@ -157,9 +157,9 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   (old hyprlang two-token syntax) fails.** `hyprctl dispatch` now expects a
   Lua expression: `hyprctl dispatch 'hl.dsp.<name>(<args>)'` (e.g. `hyprctl
   dispatch 'hl.dsp.exit()'`, `hyprctl dispatch 'hl.dsp.dpms({action = "off"})'`,
-  `hyprctl dispatch 'hl.dsp.window.move({ direction = "l" })'`). This bit
+  `hyprctl dispatch 'hl.dsp.window.move({ direction = "left" })'`). This bit
   every script that shells out to `hyprctl dispatch` (`session-exit`,
-  `movewindow`, `lockscreen`, `window-switcher`, `workspace-send-all`) and
+  `lockscreen`, `window-switcher`) and
   both `hypridle.conf` files' `dpms on`/`off` actions — hypridle itself
   stays hyprlang, but its shelled-out `hyprctl dispatch` calls are
   interpreted by the *live Hyprland instance*, so they need the new syntax
@@ -191,6 +191,9 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
 
 - After config edits: `hyprctl reload && hyprctl configerrors`.
 - Inspect live binds with `hyprctl binds -j | jq`.
+- Window logic for binds goes in `conf/actions.lua` (in-process: `hl.get_windows()`,
+  `hl.dispatch`, errors land in the Hyprland log), not in scripts that round-trip
+  through `hyprctl -j`. Scripts are for things that wait on another program (fuzzel).
 - Commits: conventional style (`feat:`/`fix:`/`chore:`), one logical change
   each, **always pass explicit pathspecs to `git commit`** — the index may
   hold staged deletions that a bare commit would swallow.

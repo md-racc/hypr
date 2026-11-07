@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # scripts/verify-lua-config <machine>
-# Static-checks the in-progress Lua config without touching the live session.
+# Static-checks the repo's Lua config for one machine without touching the live session.
 set -euo pipefail
 
 machine="${1:?usage: verify-lua-config <zion|rocinante>}"

@@ -1,7 +1,6 @@
 -- hyprland.lua
--- Lua replacement for hyprland.conf. Source order preserved 1:1 from the
--- old `source = ...` chain. conf/machine is the gitignored per-host symlink
--- (see CLAUDE.md) — unchanged mechanism, now pointing at .lua files.
+-- Only requires; everything lives under conf/. conf/machine is the gitignored
+-- per-host symlink to conf/machines/<host>/ (see CLAUDE.md).
 
 require("conf.machine.monitors")
 require("conf.machine.env")
@@ -19,8 +18,9 @@ hl.config({
     },
 })
 
--- Per-scheme overrides (decoration.blur) written by `theme` (wallust) from the
--- scheme JSON's optional "hyprland" key. Empty/missing file = values above.
+-- Per-scheme overrides written by `theme` (wallust): always misc.background_color,
+-- plus decoration.blur from the scheme JSON's optional "hyprland" key.
+-- Missing file = values above.
 -- Loaded without pcall so mistakes show up in `hyprctl configerrors`.
 local theme_overrides = os.getenv("HOME") .. "/.cache/wallust/hypr-theme.lua"
 local fh = io.open(theme_overrides)

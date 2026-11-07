@@ -1,3 +1,5 @@
+-- conf/programs.lua
+-- Default apps for binds (shared by both machines).
 return {
     terminal    = "kitty -e /bin/zsh",
     fileManager = "kitty ranger",

@@ -1,9 +1,8 @@
 -- conf/keybinds.lua
--- Converted from conf/keybinds.conf.
--- Unlike hyprlang, Lua `require()`d files don't share a global $var namespace,
--- so shared binds that need machine-specific programs must require() them explicitly.
+-- Shared binds and submaps; conf/machine/keybinds.lua adds device-specific ones.
+-- Lua files don't share variables: anything using `programs` require()s it.
 
-local programs = require("conf.machine.programs")
+local programs = require("conf.programs")
 
 -- Apps (shared — machine keybinds.lua adds device-specific ones)
 hl.bind("SUPER + RETURN", hl.dsp.exec_cmd(programs.terminal))

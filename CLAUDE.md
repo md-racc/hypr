@@ -8,9 +8,10 @@ have no Lua config and stay hyprlang `.conf`.
 
 - `conf/machine` is a **gitignored symlink** to `conf/machines/<hostname>/`,
   created once per machine (`ln -s machines/<host> conf/machine`). Shared config
-  (`appearance.lua`, `keybinds.lua`, `rules.lua`) applies everywhere;
-  per-machine dirs hold `monitors`, `env`, `programs`, `autostart`, `input`,
-  extra keybinds, and `hyprlock`/`hypridle` configs.
+  (`appearance.lua`, `env.lua`, `programs.lua`, `keybinds.lua`, `rules.lua`)
+  applies everywhere; per-machine dirs hold `monitors`, `env` (machine-only
+  variables, after the shared ones), `autostart`, `input`, extra keybinds, and
+  `hyprlock`/`hypridle` configs.
 - Machines: **zion** — desktop, DP-3 (1080p@165, no VRR: panels aren't capable) +
   HDMI-A-1 (1080p@75), eww clock/workspace widgets. **rocinante** — ThinkPad,
   eDP-1, touchpad gestures, keyboard-backlight binds.

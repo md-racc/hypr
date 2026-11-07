@@ -3,8 +3,9 @@
 -- per-host symlink to conf/machines/<host>/ (see CLAUDE.md).
 
 require("conf.machine.monitors")
+require("conf.env")
 require("conf.machine.env")
-require("conf.machine.programs")
+require("conf.programs")
 require("conf.machine.autostart")
 require("conf.appearance")
 require("conf.machine.input")

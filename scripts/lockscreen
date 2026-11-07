@@ -8,7 +8,8 @@
 #                       inhibited until unlock, displays go off (not on NVIDIA:
 #                       see can_blank). Any key wakes them
 #                       (misc:key_press_enables_dpms).
-#   lockscreen resume   hypridle's after_sleep_cmd: displays on.
+#   lockscreen resume   hypridle's after_sleep_cmd: displays on (DPMS, re-sent
+#                       until the outputs are back, and DDC: see scripts/ddc-power).
 #   lockscreen fprint   One fingerprint scan; a match unlocks hyprlock (SIGUSR1).
 #                       Bound to Enter while locked (LOCKSCREEN_ENTER in
 #                       conf/keybinds.lua, enabled only for the lock's lifetime,
@@ -44,6 +45,9 @@ SHOT=/tmp/hyprlock-eDP-1.png   # referenced by rocinante's hyprlock.conf
 FPRINT_TIMEOUT=10
 
 dpms()       { hyprctl dispatch "hl.dsp.dpms({action = \"$1\"})" >/dev/null 2>&1 8>&- 9>&-; }
+# Monitors that zion's hypridle switched off over DDC (no-op when none are);
+# background: verifying a waking panel takes seconds.
+ddc_on()     { "${0%/*}/ddc-power" on 7>&- 8>&- 9>&- & }
 enter_bind() { hyprctl eval "LOCKSCREEN_ENTER:set_enabled($1)" >/dev/null 2>&1 8>&- 9>&-; }
 has_fprint() { command -v fprintd-verify >/dev/null; }
 # DPMS off while the session is locked makes Hyprland 0.57 + aquamarine on
@@ -130,6 +134,7 @@ lock() {
     trap - EXIT
     pkill -x fprintd-verify 2>/dev/null
     dpms on
+    ddc_on
 }
 
 fprint() {
@@ -196,8 +201,16 @@ rearm() {
     locked && pgrep -x hyprlock >/dev/null && arm true
 }
 
+# The outputs drop and come back about a second after resume (hyprlock logs
+# "output N done" ~1s after after_sleep_cmd runs), so a single dpms on can land
+# before they exist and be lost. Re-send it only while an output reports off, for 5s.
 resume() {
+    ddc_on
     dpms on
+    for _ in $(seq 10); do
+        sleep 0.5
+        hyprctl monitors 2>/dev/null 8>&- 9>&- | grep -q 'dpmsStatus: 0' && dpms on
+    done
 }
 
 case ${1:-lock} in

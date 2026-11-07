@@ -198,21 +198,34 @@ LOCKSCREEN_ENTER:set_enabled(false)
 -- Wake guard: the press that wakes dark displays (key_press_enables_dpms)
 -- can also fire the bind, so F1 on a dark screen could power off. A 100ms
 -- watcher notes when any display was last off; a press within ~300ms of
--- that only wakes.
+-- that only wakes. "Off" includes panels scripts/ddc-power switched off
+-- (zion): Hyprland still reports those as on. Its state file stays non-empty
+-- until the wake is verified (~5s), so the waking press is always swallowed.
+local ddc_state = (os.getenv("XDG_RUNTIME_DIR") or "") .. "/ddc-power.off"
+local function ddc_dark()
+    local f = io.open(ddc_state, "r")
+    if not f then return false end
+    local line = f:read("l")
+    f:close()
+    return line ~= nil and line ~= ""
+end
+local function dark()
+    for _, m in ipairs(hl.get_monitors()) do
+        if not m.dpms_status then return true end
+    end
+    return ddc_dark()
+end
+
 local tick, dark_tick = 0, -100
 local dark_watch = hl.timer(function()
     tick = tick + 1
-    for _, m in ipairs(hl.get_monitors()) do
-        if not m.dpms_status then dark_tick = tick end
-    end
+    if dark() then dark_tick = tick end
 end, { timeout = 100, type = "repeat" })
 
 local power_binds = {}
 for key, action in pairs({ F1 = "poweroff", F2 = "reboot", F3 = "suspend", F4 = "away" }) do
     power_binds[#power_binds + 1] = hl.bind(key, function()
-        for _, m in ipairs(hl.get_monitors()) do
-            if not m.dpms_status then return end
-        end
+        if dark() then return end
         if tick - dark_tick <= 3 then return end
         hl.exec_cmd("~/.config/hypr/scripts/lockscreen power " .. action)
     end, { locked = true })

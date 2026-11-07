@@ -82,12 +82,18 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   dark displays (`key_press_enables_dpms`) can also fire the bind (order
   unverified: `wtype` input doesn't trigger binds), so a 100ms timer
   records when a display was last off and F-presses within ~300ms of that
-  only wake. Lock state is read from `/proc/locks` (`locked()`), never by
+  only wake. Panels `scripts/ddc-power` switched off count as dark (its state
+  file `$XDG_RUNTIME_DIR/ddc-power.off` is non-empty until the wake is
+  verified, ~5s): Hyprland reports them as on, and the waking press would
+  otherwise power off. Lock state is read from `/proc/locks` (`locked()`), never by
   probing with flock (a probe briefly holds the lock and would no-op a
   concurrent lock_cmd); the PID there is the `flock` helper's, not the
   supervisor's, so don't wait on it. On rocinante F1-F4 are media keys
   unless Fn-lock is on.
-- `lockscreen resume`: `after_sleep_cmd`. Displays on.
+- `lockscreen resume`: `after_sleep_cmd`. Displays on: DDC (`scripts/ddc-power
+  on`, no-op unless hypridle turned them off) and DPMS, re-sent for 5s while
+  any output reports `dpmsStatus: 0` (the outputs drop and come back ~1s after
+  resume, so one early dpms on can be lost).
 - Speed: the laptop background is `grim -l 0` (uncompressed PNG, ~50ms; the
   default compression level took ~1.25s) and hyprlock `animations` are off.
   Keep slow calls (e.g. `fprintd-list`, ~460ms) out of the lock and Enter paths.
@@ -106,17 +112,37 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   type the password blind + Enter. `ignore_empty_input` stops Enter-to-wake
   counting as an attempt.
 - Idle (rocinante): 4:30 dim → 4:45 notify → 5:00 lock → 15:00 suspend.
-  Idle (zion): 14:30 notify → 15:00 lock → 30:00 suspend (no screens-off).
+  Idle (zion): 14:30 notify → 15:00 lock → 20:00 screens off (DDC) → 30:00
+  suspend.
 - **No DPMS off while locked on NVIDIA (zion).** Hyprland 0.57.x +
-  aquamarine 0.16 exits uncleanly ~0.5-1.3s after a DPMS off while hyprlock
-  holds the lock: no core dump, no crash report, Hyprland's log just stops,
-  and start-hyprland says "exit not-cleanly" and restarts it in safe mode
-  (all three zion crashes 2026-11-05/06 were `lockscreen away`'s or
-  hypridle's dpms off; upstream aquamarine#483/#475, omarchy#17872, unfixed
-  as of 2026-11-06). So `lockscreen away` skips its `dpms off` where
-  `/proc/driver/nvidia` exists (`can_blank`), and zion's hypridle has no
-  screens-off listener. relock_prep only recovers *after* the crash; it
-  doesn't prevent it. Re-enable both once a fixed Hyprland/aquamarine ships.
+  aquamarine 0.16 exits uncleanly ~0.5-1.3s after a DPMS change while hyprlock
+  holds the lock: no core dump, no crash report, and start-hyprland says
+  "exit not-cleanly" and restarts it in safe mode. Triggers seen: DPMS off
+  (`lockscreen away`, hypridle; 2026-11-05 09:18 and 18:03, 2026-11-06 08:18
+  and 16:52) and the DPMS on after a resume (2026-11-06 17:43). Since the
+  2026-11-03 upgrade, 4 of 5 DPMS offs under our config crashed; ~7 DPMS
+  off/on in safe mode didn't. Upstream aquamarine#483/#475, omarchy#17872,
+  unfixed as of 2026-11-07. So `lockscreen away` skips its `dpms off` where
+  `/proc/driver/nvidia` exists (`can_blank`), and zion's hypridle turns the
+  screens off over **DDC/CI** instead (`scripts/ddc-power`: the panel powers
+  down, the connector stays up, Hyprland sees nothing; Acer GF246 only takes
+  D6=05, ASUS VG247Q1A D6=04; both wake on D6=01; verified 2026-11-07).
+  Away mode can't use DDC: Hyprland's key-wake doesn't see DDC state and
+  hypridle's on-resume only fires after its own timeout, so nothing would
+  wake them. relock_prep only recovers *after* a crash. Re-enable DPMS once
+  a fixed Hyprland/aquamarine ships.
+  **Crash evidence:** Hyprland logs only to `/run/user/$UID/hypr/<sig>/`; a
+  dead instance's dir (with `hyprland.lock` left behind; a clean exit
+  removes it) survives until reboot. `scripts/hypr-crash-logs` copies those
+  logs to `~/.local/state/hypr-crashes/` (run by hypridle's `ExecStartPre`
+  drop-in and by relock_prep). Read the newest one before theorising about a
+  crash. `~/.local/state/ly-session.log` is start-hyprland's stdout, but ly
+  overwrites it at each login.
+- **Resume hangs (zion), cause unknown.** 2026-11-05 18:33 and 2026-11-07
+  10:40: the journal ends at `PM: suspend entry (deep)` with no `suspend exit`
+  and the machine needed a hard reset. Not the lock scripts (one had no crash
+  and the screens on). Kernel 7.2.14 + nvidia-open 615.78.08 + the new
+  `UseKernelSuspendNotifiers=1` path; no linux-lts installed to compare.
 
 ## Gotchas (hard-won, do not relearn)
 

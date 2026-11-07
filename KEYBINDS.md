@@ -211,7 +211,7 @@ Tap `SUPER+X`, **keep SUPER held**, then one key.
 | Key | Action |
 |-----|--------|
 | `SUPER+L` | Lock (`loginctl lock-session` → `scripts/lockscreen`) |
-| `SUPER+A` | **Away mode** — lock + screens off; suspend *and lid-close* blocked, processes/network stay alive until unlock |
+| `SUPER+A` | **Away mode** — lock + screens off (not on zion: NVIDIA crash, screens stay on); suspend *and lid-close* blocked, processes/network stay alive until unlock |
 | `SUPER+S` | Suspend |
 | `SUPER+R` | Reboot |
 | `SUPER+P` | Power off |
@@ -222,7 +222,8 @@ Tap `SUPER+X`, **keep SUPER held**, then one key.
 
 Submaps can't be entered while locked. Use these direct binds instead.
 The F-keys work like ly's and exist only while locked. A press that wakes
-dark displays only wakes them. On rocinante they're the media keys unless
+dark displays only wakes them (on zion that includes screens the idle
+timer switched off over DDC). On rocinante they're the media keys unless
 Fn-lock is on (or hold Fn).
 
 | Key | Action |
@@ -230,7 +231,7 @@ Fn-lock is on (or hold Fn).
 | `F1` | Power off |
 | `F2` | Reboot |
 | `F3` | Suspend (ends away mode first) |
-| `F4` | Away mode (as `SUPER+X` → `SUPER+A`; already locked, so it just blocks suspend/lid and turns the screens off) |
+| `F4` | Away mode (as `SUPER+X` → `SUPER+A`; already locked, so it just blocks suspend/lid and turns the screens off, except on zion) |
 
 ---
 

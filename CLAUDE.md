@@ -47,6 +47,10 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   displays could not be woken by any key after the 2026-11-06 17:43 crash)
   and runs `scripts/hypr-crash-logs`. Safe mode still has none of our binds
   (F1-F4, Enter); log out and back in to get the config back.
+  **The supervisor runs in its own `systemd-run --scope`**: hypridle aborts
+  seconds after a Hyprland crash, and systemd killed its cgroup with the
+  supervisor and the relaunched hyprlock in it (2026-11-06 08:18, 16:52,
+  17:43: locked with nothing to unlock). Falls back to locking in place.
   **Children must not inherit the lock fd** (`9>&-`): `rbw lock` once started
   rbw-agent, which held the flock forever, and every later lock became a
   silent no-op.

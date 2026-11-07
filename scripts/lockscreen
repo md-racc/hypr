@@ -98,6 +98,16 @@ relock_prep() {
 }
 
 lock() {
+    # Supervise from our own scope, not the caller's cgroup. As hypridle's
+    # lock_cmd we'd live in hypridle.service, and a Hyprland crash takes
+    # hypridle down seconds later: systemd then killed the cgroup, supervisor
+    # and just-relaunched hyprlock included, leaving the session locked with
+    # nothing to unlock it (2026-11-06 08:18, 16:52, 17:43). If the scope can't
+    # be started, or it dies without an unlock, lock here rather than not at all.
+    if [[ -z ${LOCKSCREEN_SCOPED:-} ]]; then
+        LOCKSCREEN_SCOPED=1 systemd-run --user --scope --collect --quiet -- "$0" lock && exit 0
+        locked && exit 0
+    fi
     exec 9>"$LOCKFILE"
     flock -n 9 || exit 0                       # already locked
 

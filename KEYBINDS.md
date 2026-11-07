@@ -22,6 +22,7 @@
 - [Session](#session)
 - [Volume & Media](#volume--media)
 - [Brightness](#brightness)
+- [Notifications](#notifications)
 
 ---
 
@@ -116,11 +117,13 @@ Mouse alternative: `SUPER+RightMouse` drag (see [Mouse](#mouse)).
 
 | Key | Action |
 |-----|--------|
-| `` SUPER+` `` | Toggle special workspace overlay |
+| `` SUPER+` `` | Drop-down terminal: show/hide the special workspace; starts the scratchpad terminal first if it isn't running (`scripts/scratchpad`) |
 | `` SUPER+SHIFT+` `` | Move window to special workspace |
 
-Windows with class `scratchpad` float 900x600 centered there automatically
-(`rules.lua`).
+The scratchpad terminal is kitty with class `scratchpad` attached to tmux's
+`scratch` session (the same as tmux `prefix t`, so its shell survives
+toggles). Windows with that class float 900x600 centered on the special
+workspace automatically (`rules.lua`).
 
 ---
 
@@ -241,13 +244,14 @@ Fn-lock is on (or hold Fn).
 
 ## Volume & Media
 
-Volume repeats while held and works on the lock screen.
+Volume repeats while held, stops at 100%, and works on the lock screen. Each
+press shows the level in one bubble that updates in place (`scripts/osd`).
 
 | Key | Action |
 |-----|--------|
-| `VolumeUp/Down` | Volume ±5% |
-| `Mute` | Toggle mute |
-| `MicMute` | Toggle mic mute |
+| `VolumeUp/Down` | Volume ±5% (max 100%) |
+| `Mute` | Toggle mute (no repeat) |
+| `MicMute` | Toggle mic mute (no repeat) |
 | `MediaPlay/Pause` | Play/pause (`playerctl`) |
 | `MediaNext/Prev` | Next / previous track (`playerctl`) |
 
@@ -255,10 +259,23 @@ Volume repeats while held and works on the lock screen.
 
 ## Brightness
 
-Works on the lock screen.
+Works on the lock screen and shows the level (`scripts/osd`). Laptops step the
+backlight; zion (no backlight) steps both monitors over DDC/CI
+(`scripts/ddc-brightness`).
 
 | Key | Action |
 |-----|--------|
-| `BrightnessUp/Down` | Backlight ±10% |
+| `BrightnessUp/Down` | Brightness ±10% |
 | `SUPER+BrightnessUp/Down` | Fine step ±5% |
+| `SUPER+F6` / `SUPER+F5` | Monitors ±10% over DDC/CI (zion only; same keys as ly) |
 | `ALT+BrightnessUp/Down` | Keyboard backlight (rocinante only) |
+
+---
+
+## Notifications
+
+| Key | Action |
+|-----|--------|
+| `SUPER+N` | Dismiss the newest notification (`fnottctl dismiss`) |
+| `SUPER+SHIFT+N` | Pick an action of a notification (fuzzel; `fnottctl actions`) |
+| `SUPER+CTRL+N` | Do not disturb on/off (`scripts/dnd`): new notifications are held and all shown when it's turned off — critical ones too |

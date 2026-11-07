@@ -67,7 +67,8 @@ hl.bind("SUPER + SHIFT + K", hl.dsp.exec_cmd("~/.config/hypr/scripts/movewindow 
 hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd("~/.config/hypr/scripts/movewindow r"))
 
 -- Special workspace (scratchpad)
-hl.bind("SUPER + grave",         hl.dsp.workspace.toggle_special("special"))
+-- SUPER+` = drop-down terminal (kitty class scratchpad on tmux's `scratch`; started on first use)
+hl.bind("SUPER + grave",         hl.dsp.exec_cmd("~/.config/hypr/scripts/scratchpad"))
 hl.bind("SUPER + SHIFT + grave", hl.dsp.window.move({ workspace = "special" }))
 
 -- Workspaces 1-10, and move window to workspace
@@ -86,11 +87,13 @@ hl.bind("SUPER + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
 hl.bind("SUPER + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- Volume
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"),   { locked = true, repeating = true })
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),   { locked = true, repeating = true })
-hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),   { locked = true, repeating = true })
-hl.bind("XF86AudioMicMute",     hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true, repeating = true })
+-- Volume (scripts/osd: capped at 100% like the eww scroll, one level bubble updated in place).
+-- Mute doesn't repeat: held, it flipped ~35 times a second and landed anywhere.
+local OSD = "~/.config/hypr/scripts/osd"
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd(OSD .. " vol up"),   { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd(OSD .. " vol down"), { locked = true, repeating = true })
+hl.bind("XF86AudioMute",        hl.dsp.exec_cmd(OSD .. " vol mute"), { locked = true })
+hl.bind("XF86AudioMicMute",     hl.dsp.exec_cmd(OSD .. " mic mute"), { locked = true })
 
 -- Media (requires playerctl)
 hl.bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { locked = true })
@@ -98,11 +101,17 @@ hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = tr
 hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
 
--- Brightness
-hl.bind("XF86MonBrightnessUp",           hl.dsp.exec_cmd("brightnessctl set +10%"), { locked = true })
-hl.bind("XF86MonBrightnessDown",         hl.dsp.exec_cmd("brightnessctl set 10%-"), { locked = true })
-hl.bind("SUPER + XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl set +5%"),  { locked = true })
-hl.bind("SUPER + XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl set 5%-"),  { locked = true })
+-- Brightness (scripts/osd: the backlight where there is one, else the monitors over DDC/CI — zion,
+-- whose brightnessctl only finds a keyboard LED). No repeat: DDC writes take 50-150 ms each.
+hl.bind("XF86MonBrightnessUp",           hl.dsp.exec_cmd(OSD .. " bright up"),     { locked = true })
+hl.bind("XF86MonBrightnessDown",         hl.dsp.exec_cmd(OSD .. " bright down"),   { locked = true })
+hl.bind("SUPER + XF86MonBrightnessUp",   hl.dsp.exec_cmd(OSD .. " bright up 5"),   { locked = true })
+hl.bind("SUPER + XF86MonBrightnessDown", hl.dsp.exec_cmd(OSD .. " bright down 5"), { locked = true })
+
+-- Notifications (fnott): dismiss the newest, pick an action (fuzzel), do-not-disturb
+hl.bind("SUPER + N",          hl.dsp.exec_cmd("fnottctl dismiss"))
+hl.bind("SUPER + SHIFT + N",  hl.dsp.exec_cmd("fnottctl actions"))
+hl.bind("SUPER + CTRL + N",   hl.dsp.exec_cmd("~/.config/hypr/scripts/dnd"))
 
 -- Screenshots (screenie, the Rust port: `cargo install --path crates/screenie`
 -- from screenie's rust/). Plain = clipboard; SUPER = also save a file.

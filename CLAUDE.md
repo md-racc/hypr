@@ -95,9 +95,10 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   supervisor's, so don't wait on it. On rocinante F1-F4 are media keys
   unless Fn-lock is on.
 - `lockscreen resume`: `after_sleep_cmd`. Displays on: DDC (`scripts/ddc-power
-  on`, no-op unless hypridle turned them off) and DPMS, re-sent for 5s while
-  any output reports `dpmsStatus: 0` (the outputs drop and come back ~1s after
-  resume, so one early dpms on can be lost).
+  on`, no-op unless hypridle turned them off) and, except on NVIDIA (no DPMS
+  while locked, below), DPMS, re-sent for 5s while any output reports
+  `dpmsStatus: 0` (the outputs drop and come back ~1s after resume, so one
+  early dpms on can be lost). hyprlock logs under `journalctl --user -t hyprlock`.
 - Speed: the laptop background is `grim -l 0` (uncompressed PNG, ~50ms; the
   default compression level took ~1.25s) and hyprlock `animations` are off.
   Keep slow calls (e.g. `fprintd-list`, ~460ms) out of the lock and Enter paths.
@@ -126,8 +127,9 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   and 16:52) and the DPMS on after a resume (2026-11-06 17:43). Since the
   2026-11-03 upgrade, 4 of 5 DPMS offs under our config crashed; ~7 DPMS
   off/on in safe mode didn't. Upstream aquamarine#483/#475, omarchy#17872,
-  unfixed as of 2026-11-07. So `lockscreen away` skips its `dpms off` where
-  `/proc/driver/nvidia` exists (`can_blank`), and zion's hypridle turns the
+  unfixed as of 2026-11-07. So `lockscreen away` skips its `dpms off` and
+  `lockscreen resume` its `dpms on` where `/proc/driver/nvidia` exists
+  (`can_blank`), and zion's hypridle turns the
   screens off over **DDC/CI** instead (`scripts/ddc-power`: the panel powers
   down, the connector stays up, Hyprland sees nothing; Acer GF246 only takes
   D6=05, ASUS VG247Q1A D6=04; both wake on D6=01; verified 2026-11-07).

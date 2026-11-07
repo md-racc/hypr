@@ -117,6 +117,15 @@ hl.bind("SUPER + SHIFT + Print", hl.dsp.exec_cmd(SCREENIE .. " shot" .. SHOTS))
 hl.bind("SUPER + G", hl.dsp.exec_cmd(SCREENIE .. " edit last"))
 hl.bind("SUPER + SHIFT + G", hl.dsp.exec_cmd(SCREENIE .. " edit last --mode annotate"))
 
+-- Screen recording (scripts/record → gpu-screen-recorder). The same key stops
+-- a recording; the replay key starts a 30 s buffer, then saves it.
+local RECORD = "~/.config/hypr/scripts/record"
+hl.bind("SUPER + ALT + Print",          hl.dsp.exec_cmd(RECORD .. " toggle region"))
+hl.bind("SUPER + ALT + SHIFT + Print",  hl.dsp.exec_cmd(RECORD .. " toggle window"))
+hl.bind("SUPER + CTRL + Print",         hl.dsp.exec_cmd(RECORD .. " toggle screen"))
+hl.bind("SUPER + CTRL + SHIFT + Print", hl.dsp.exec_cmd(RECORD .. " replay"))
+hl.bind("SUPER + CTRL + ALT + Print",   hl.dsp.exec_cmd(RECORD .. " replay stop"))
+
 -------------------------
 ---- RESIZE SUBMAP ------
 -------------------------

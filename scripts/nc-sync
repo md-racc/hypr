@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# nc-sync — keep ~/nextcloud in step with Nextcloud: sync at start, after local changes, and every 5 min.
+#
+#   nc-sync             run the loop (systemd/nextcloud-client.service)
+#   nc-sync -h|--help   print this help
+#
+# Config from the unit's EnvironmentFile (~/.config/nextcloud-sync.env): NC_URL (https://…), and NC_USER /
+# NC_PASSWORD, which nextcloudcmd reads from the environment itself. NC_DIR defaults to ~/nextcloud.
+# TLS is verified against the system trust store (the lab's step CA root is an anchor) — no --trust.
+# The desktop client's exclude list (~/.config/Nextcloud/sync-exclude.lst) applies when it exists.
+#
+# Local changes: inotify, 3 s debounce; the sync journal (.sync_<hex>.db*), the client's log, lock files
+# and in-flight downloads (.<name>.~<hex>) are ignored, so a sync doesn't trigger the next one. Remote
+# changes (other devices, the phone) arrive within 5 min through the inotifywait timeout.
+# A failed sync is retried at the next wake-up; while online, 6 failures in a row (~25 min) exit 3,
+# which the unit doesn't restart (RestartPreventExitStatus=3), so the failure becomes visible
+# (OnFailure → unit-failed-notify@) instead of a silent loop.
+set -uo pipefail
+
+usage() { awk 'NR == 1 { next } !/^#/ { exit } /^#   / { u = 1 } u && /^#$/ { exit } { sub(/^# ?/, ""); print }' "$0"; }
+if (($#)); then
+    if [[ $# == 1 && ( $1 == -h || $1 == --help ) ]]; then usage; exit 0; fi
+    echo "nc-sync: takes no arguments (got: $*)" >&2; usage >&2; exit 2
+fi
+
+[[ ${NC_URL:-} == https://* ]] || {
+    echo "nc-sync: NC_URL must be set to the server's https:// URL (in ~/.config/nextcloud-sync.env)" >&2; exit 1; }
+NC_DIR=${NC_DIR:-$HOME/nextcloud}
+POLL=${NC_POLL:-300}   # seconds between periodic pulls (tests set it lower)
+MAX_FAILS=6
+EXCLUDE_FILE=${XDG_CONFIG_HOME:-$HOME/.config}/Nextcloud/sync-exclude.lst
+# inotifywait matches this ERE against the full path
+IGNORE='(^|/)(\.sync_[0-9a-f]+\.db(-wal|-shm|-journal)?|\.nextcloudsync\.log|\.~lock\.[^/]*|\.[^/]*\.~[0-9a-f]+|[^/]*\.part)$'
+
+[[ -d $NC_DIR ]] || { echo "nc-sync: $NC_DIR does not exist" >&2; exit 1; }
+excl=()
+[[ -f $EXCLUDE_FILE ]] && excl=(--exclude "$EXCLUDE_FILE")
+
+fails=0
+do_sync() {
+    local rc=0
+    nextcloudcmd --non-interactive --silent "${excl[@]}" "$NC_DIR" "$NC_URL" || rc=$?
+    if ((rc == 0)); then fails=0; return 0; fi
+    # offline (laptop on the move): not the server's fault, don't count it
+    if command -v nm-online >/dev/null && ! nm-online -q -t 0; then
+        echo "nc-sync: sync failed (rc $rc) while offline; retrying in ${POLL}s"
+        return 0
+    fi
+    fails=$((fails + 1))
+    echo "nc-sync: sync failed (rc $rc), $fails in a row" >&2
+    if ((fails >= MAX_FAILS)); then
+        echo "nc-sync: giving up after $fails failed syncs — check the server/credentials, then restart the unit" >&2
+        exit 3
+    fi
+}
+
+do_sync   # catch up on whatever changed while we were away
+while true; do
+    rc=0
+    inotifywait -r -q -t "$POLL" -e close_write,moved_to,create,delete --exclude "$IGNORE" "$NC_DIR" || rc=$?
+    case $rc in
+        0) sleep 3 ;;       # local change: let bursts settle
+        2) ;;               # timeout: periodic pull
+        *) echo "nc-sync: inotifywait failed (rc $rc)" >&2; exit 1 ;;
+    esac
+    do_sync
+done

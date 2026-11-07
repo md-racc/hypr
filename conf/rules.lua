@@ -1,5 +1,5 @@
 -- conf/rules.lua
--- Converted from conf/rules.conf.
+-- Shared window and layer rules.
 
 -- Gnome apps
 hl.window_rule({ name = "gnome-float", match = { class = "org.gnome.*" }, float = true })
@@ -30,7 +30,6 @@ hl.window_rule({
 hl.window_rule({ name = "spotify-tile", match = { class = "^(Spotify)$" }, tile = true })
 
 -- System tools
-hl.window_rule({ name = "resources-float", match = { class = "net.nokyan.Resources" }, float = true })
 hl.window_rule({ name = "portal-float",    match = { class = "xdg-desktop-portal-gtk" }, float = true })
 
 hl.window_rule({

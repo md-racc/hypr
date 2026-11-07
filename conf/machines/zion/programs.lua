@@ -3,6 +3,6 @@ return {
     fileManager = "kitty ranger",
     taskmanager = "kitty btop",
     browser     = "firefox",
-    notes       = "obsidian --enable-features=UseOzonePlatform --ozone-platform=wayland",
+    notes       = "obsidian --ozone-platform=wayland",
     ide         = "kitty nvim",
 }

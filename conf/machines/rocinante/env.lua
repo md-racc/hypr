@@ -1,9 +1,7 @@
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("MOZ_ENABLE_WAYLAND", "1")
-hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
-hl.env("OZONE_PLATFORM", "wayland")
-hl.env("GDK_BACKEND", "wayland,x11")
+hl.env("GDK_BACKEND", "wayland")   -- no x11 fallback: XWayland is off
 hl.env("GSK_RENDERER", "gl")
 
 -- File dialogs through the xdg portal (→ termfilechooser/ranger) instead of GTK's own

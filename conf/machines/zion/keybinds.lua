@@ -12,3 +12,8 @@ local AGAIN = "~/.local/bin/again"
 hl.bind("SUPER + SHIFT + period", hl.dsp.exec_cmd(AGAIN .. " record --toggle --control-chord SUPER+SHIFT+KEY_DOT"))
 hl.bind("SUPER + period",         hl.dsp.exec_cmd(AGAIN .. " play --speed 2 --max-idle 1000 --control-chord SUPER+KEY_DOT"))
 hl.bind("SUPER + Escape",         hl.dsp.exec_cmd(AGAIN .. " cancel"))
+
+-- Monitor brightness over DDC/CI (zion's keyboards have no brightness keys): SUPER+F5/F6, as ly's
+-- brightness_down_key/brightness_up_key. Clear of the lock screen's F1-F4 power keys.
+hl.bind("SUPER + F6", hl.dsp.exec_cmd("~/.config/hypr/scripts/osd bright up"),   { locked = true })
+hl.bind("SUPER + F5", hl.dsp.exec_cmd("~/.config/hypr/scripts/osd bright down"), { locked = true })

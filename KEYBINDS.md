@@ -16,11 +16,13 @@
 - [Special Workspace (Scratchpad)](#special-workspace-scratchpad)
 - [Mouse](#mouse)
 - [Screenshots](#screenshots)
+- [Screen Recording](#screen-recording)
 - [Macros — `again` (zion)](#macros--again-zion)
 - [Power — `SUPER+X`](#power--superx)
 - [Session](#session)
 - [Volume & Media](#volume--media)
 - [Brightness](#brightness)
+- [Notifications](#notifications)
 
 ---
 
@@ -31,7 +33,7 @@
 | `SUPER+Return` | Terminal (`kitty` + zsh) |
 | `SUPER+B` | Browser (`firefox`) |
 | `SUPER+R` | App launcher (`fuzzel`) |
-| `SUPER+V` | Clipboard history picker (`cliphist` → fuzzel → paste-ready) |
+| `SUPER+V` | Clipboard history picker (`scripts/clip-pick`: cliphist → fuzzel → paste-ready). Images show a thumbnail. In the picker: `Shift+Delete` deletes the entry and reopens, `Ctrl+Shift+Delete` wipes the history (asks first). History is capped at 300 entries |
 | `SUPER+SHIFT+V` | Vaultwarden picker (`~/.local/bin/vw`: rbw → fuzzel, fingerprint unlock) |
 | `SUPER+Tab` | Window switcher (fuzzel list of open windows) |
 
@@ -115,11 +117,13 @@ Mouse alternative: `SUPER+RightMouse` drag (see [Mouse](#mouse)).
 
 | Key | Action |
 |-----|--------|
-| `` SUPER+` `` | Toggle special workspace overlay |
+| `` SUPER+` `` | Drop-down terminal: show/hide the special workspace; starts the scratchpad terminal first if it isn't running (`scripts/scratchpad`) |
 | `` SUPER+SHIFT+` `` | Move window to special workspace |
 
-Windows with class `scratchpad` float 900x600 centered there automatically
-(`rules.lua`).
+The scratchpad terminal is kitty with class `scratchpad` attached to tmux's
+`scratch` session (the same as tmux `prefix t`, so its shell survives
+toggles). Windows with that class float 900x600 centered on the special
+workspace automatically (`rules.lua`).
 
 ---
 
@@ -163,6 +167,24 @@ until a screenshot has been taken this login.
 `SUPER+G` opens the last screenshot in screenie's picker with its layers
 still editable. All tools are available, including annotate, censor,
 filter, OCR and pin. Inside the picker, `y` OCRs the box directly.
+
+---
+
+## Screen Recording
+
+`scripts/record` drives [gpu-screen-recorder](https://git.dec05eba.com/gpu-screen-recorder/about/)
+(H.264 on the GPU: NVENC on zion, VA-API on rocinante, CPU if neither works).
+Files land in `~/documents/videos/`; when one is saved, a notification shows
+the path and a `file://` URI is copied. Any toggle key stops a running
+recording. `record --help` for the rest (`-a` adds desktop audio).
+
+| Key | Action |
+|-----|--------|
+| `SUPER+ALT+Print` | Record an area (screenie's picker, `Enter` starts) / stop |
+| `SUPER+ALT+SHIFT+Print` | Record the active window's box / stop |
+| `SUPER+CTRL+Print` | Record the focused monitor / stop |
+| `SUPER+CTRL+SHIFT+Print` | Replay buffer: first press starts it (last 30 s of the focused monitor, desktop audio, in RAM); each later press saves those 30 s |
+| `SUPER+CTRL+ALT+Print` | Replay buffer off (nothing saved) |
 
 ---
 
@@ -222,13 +244,14 @@ Fn-lock is on (or hold Fn).
 
 ## Volume & Media
 
-Volume repeats while held and works on the lock screen.
+Volume repeats while held, stops at 100%, and works on the lock screen. Each
+press shows the level in one bubble that updates in place (`scripts/osd`).
 
 | Key | Action |
 |-----|--------|
-| `VolumeUp/Down` | Volume ±5% |
-| `Mute` | Toggle mute |
-| `MicMute` | Toggle mic mute |
+| `VolumeUp/Down` | Volume ±5% (max 100%) |
+| `Mute` | Toggle mute (no repeat) |
+| `MicMute` | Toggle mic mute (no repeat) |
 | `MediaPlay/Pause` | Play/pause (`playerctl`) |
 | `MediaNext/Prev` | Next / previous track (`playerctl`) |
 
@@ -236,10 +259,23 @@ Volume repeats while held and works on the lock screen.
 
 ## Brightness
 
-Works on the lock screen.
+Works on the lock screen and shows the level (`scripts/osd`). Laptops step the
+backlight; zion (no backlight) steps both monitors over DDC/CI
+(`scripts/ddc-brightness`).
 
 | Key | Action |
 |-----|--------|
-| `BrightnessUp/Down` | Backlight ±10% |
+| `BrightnessUp/Down` | Brightness ±10% |
 | `SUPER+BrightnessUp/Down` | Fine step ±5% |
+| `SUPER+F6` / `SUPER+F5` | Monitors ±10% over DDC/CI (zion only; same keys as ly) |
 | `ALT+BrightnessUp/Down` | Keyboard backlight (rocinante only) |
+
+---
+
+## Notifications
+
+| Key | Action |
+|-----|--------|
+| `SUPER+N` | Dismiss the newest notification (`fnottctl dismiss`) |
+| `SUPER+SHIFT+N` | Pick an action of a notification (fuzzel; `fnottctl actions`) |
+| `SUPER+CTRL+N` | Do not disturb on/off (`scripts/dnd`): new notifications are held and all shown when it's turned off — critical ones too |

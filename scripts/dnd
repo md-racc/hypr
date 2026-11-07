@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# dnd — do-not-disturb for fnott: hold new notifications until it is turned off again.
+#
+#   dnd [toggle]     switch it (SUPER+CTRL+N)
+#   dnd on|off       set it
+#   dnd status       print "on" or "off"; exit 0 when on, 1 when off (for a bar indicator)
+#   dnd -h|--help    print this help
+#
+# fnottctl pause/unpause: paused notifications queue and all show on unpause — critical ones too (a wrong
+# master password from pinentry-fprint, a failed unit), which is the price of real quiet. Turning it on
+# says so in one short bubble first; the state is $XDG_RUNTIME_DIR/dnd (gone at logout, like fnott's own).
+set -uo pipefail
+
+usage() { awk 'NR == 1 { next } !/^#/ { exit } /^#   / { u = 1 } u && /^#$/ { exit } { sub(/^# ?/, ""); print }' "$0"; }
+usage_error() { echo "dnd: $1" >&2; usage >&2; exit 2; }
+
+STATE=${XDG_RUNTIME_DIR:-/run/user/$UID}/dnd
+is_on() { [[ -e $STATE ]]; }
+
+on() {
+    command -v notify-send >/dev/null &&
+        timeout 2 notify-send -a dnd -u low -t 1500 "Do not disturb" "Notifications held until SUPER+CTRL+N" >/dev/null 2>&1
+    sleep 1.6   # let that bubble show before the pause
+    fnottctl pause && : >"$STATE"
+}
+off() {
+    fnottctl unpause && rm -f "$STATE"
+}
+
+(($# <= 1)) || usage_error "too many arguments"
+case ${1:-toggle} in
+    toggle) if is_on; then off; else on; fi ;;
+    on)     is_on || on ;;
+    off)    off ;;
+    status) if is_on; then echo on; exit 0; else echo off; exit 1; fi ;;
+    -h|--help) usage ;;
+    *) usage_error "unknown argument '$1'" ;;
+esac

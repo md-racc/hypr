@@ -1,0 +1,6 @@
+[Unit]
+Description=Report failed system and user units
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/hypr/scripts/unit-failed-notify --check

@@ -1,16 +1,26 @@
 [Unit]
-Description=Nextcloud sync (inotify + nextcloudcmd)
+Description=Nextcloud sync (inotify + periodic nextcloudcmd)
 PartOf=graphical-session.target
 After=graphical-session.target network-online.target
+# A missing env file once failed 40k times in a week without ever reaching "failed" (RestartSec=5 escapes
+# the default 5-in-10s limit): give up after 10 starts in 15 min and say so.
+StartLimitIntervalSec=15min
+StartLimitBurst=10
+OnFailure=unit-failed-notify@%n.service
 
 [Service]
+# NC_URL, NC_USER, NC_PASSWORD (see scripts/nc-sync)
 EnvironmentFile=%h/.config/nextcloud-sync.env
 # network-online.target means nothing to the user manager; wait for NM directly
 # (the first start used to fail every boot and sit out a 30s RestartSec).
 ExecStartPre=/usr/bin/nm-online -q -t 60
-ExecStart=%h/.local/bin/nc-sync
+ExecStart=%h/.config/hypr/scripts/nc-sync
+# direct: an auto-restart skips the failed state, so OnFailure= fires only when the start limit gives up
+RestartMode=direct
 Restart=on-failure
 RestartSec=5
+# 3: syncs kept failing while online (nc-sync gave up) — stay failed, OnFailure tells
+RestartPreventExitStatus=3
 
 [Install]
 WantedBy=graphical-session.target

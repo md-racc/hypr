@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# unit-failed-notify — record and announce failed systemd units (journal first, then a marker, then a toast).
+#
+#   unit-failed-notify --user UNIT     one user unit failed (systemd/unit-failed-notify@.service, OnFailure=)
+#   unit-failed-notify --system UNIT   one system unit failed
+#   unit-failed-notify --check         every failed system + user unit not reported yet (failed-units-check.timer)
+#   unit-failed-notify -h|--help       print this help
+#
+# Order matters: a compositor crash takes fnott down with it, and a toast then can't be shown (or blocks on
+# D-Bus activation against a dead Wayland socket). So the failure is always written to the journal first
+# (`journalctl -t unit-failed`), then a marker per unit in ${XDG_STATE_HOME:-~/.local/state}/unit-failed/
+# (`<scope>:<unit>`, holding the time it failed and its last log lines), and only then notify-send is tried
+# (5 s timeout, errors ignored). --check reports a unit once per failure (the marker remembers when it
+# entered the failed state) and removes the markers of units that are no longer failed, so the marker dir
+# always lists what is broken right now.
+set -uo pipefail
+
+usage() { awk 'NR == 1 { next } !/^#/ { exit } /^#   / { u = 1 } u && /^#$/ { exit } { sub(/^# ?/, ""); print }' "$0"; }
+usage_error() { echo "unit-failed-notify: $1" >&2; usage >&2; exit 2; }
+
+STATE=${XDG_STATE_HOME:-$HOME/.local/state}/unit-failed
+
+# sctl <scope> … — systemctl for that scope
+sctl() { local s=$1; shift; if [[ $s == user ]]; then systemctl --user "$@"; else systemctl "$@"; fi; }
+jctl() { local s=$1; shift; if [[ $s == user ]]; then journalctl --user "$@"; else journalctl "$@"; fi; }
+
+# report <scope> <unit> — journal, marker, toast
+report() {
+    local scope=$1 unit=$2 since tail marker
+    since=$(sctl "$scope" show -P StateChangeTimestamp "$unit" 2>/dev/null)
+    echo "$scope unit $unit failed${since:+ at $since}" | systemd-cat -t unit-failed -p err 2>/dev/null ||
+        logger -t unit-failed -p user.err "$scope unit $unit failed" 2>/dev/null || true
+    mkdir -p "$STATE"
+    marker=$STATE/$scope:$unit
+    tail=$(jctl "$scope" -u "$unit" -n 5 --no-pager -o cat 2>/dev/null | cut -c1-200)
+    printf 'since=%s\n%s\n' "$since" "$tail" >"$marker.tmp" && mv "$marker.tmp" "$marker"
+    local jf=""; [[ $scope == user ]] && jf="--user "
+    if command -v notify-send >/dev/null; then
+        timeout 5 notify-send -u critical -a unit-failed "$scope unit failed: $unit" \
+            "${tail:-no log lines}"$'\n'"(journalctl $jf-u $unit)" >/dev/null 2>&1 || true
+    fi
+}
+
+# check — report each failed unit once per failure; drop markers of units that recovered
+check() {
+    local scope unit since seen f
+    local -A failed=()
+    for scope in system user; do
+        while read -r unit _; do
+            [[ -n $unit ]] || continue
+            failed[$scope:$unit]=1
+            since=$(sctl "$scope" show -P StateChangeTimestamp "$unit" 2>/dev/null)
+            seen=$(sed -n '1s/^since=//p' "$STATE/$scope:$unit" 2>/dev/null)
+            [[ -n $seen && $seen == "$since" ]] || report "$scope" "$unit"
+        done < <(sctl "$scope" list-units --failed --plain --no-legend --no-pager 2>/dev/null)
+    done
+    [[ -d $STATE ]] || return 0
+    for f in "$STATE"/*; do
+        [[ -f $f && $f != *.tmp ]] || continue
+        [[ -n ${failed[${f##*/}]:-} ]] || rm -f "$f"
+    done
+    return 0
+}
+
+case ${1:-} in
+    -h|--help) (($# == 1)) || usage_error "unexpected argument '$2'"; usage; exit 0 ;;
+    --user|--system)
+        (($# == 2)) || usage_error "$1 takes exactly one unit name"
+        [[ -n $2 && $2 != -* ]] || usage_error "bad unit name '$2'"
+        report "${1#--}" "$2" ;;
+    --check) (($# == 1)) || usage_error "unexpected argument '$2'"; check ;;
+    "") usage_error "missing mode" ;;
+    *)  usage_error "unknown argument '$1'" ;;
+esac
+exit 0

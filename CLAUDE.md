@@ -19,6 +19,9 @@ have no Lua config and stay hyprlang `.conf`.
   `hyprland-session.target` from autostart — see `docs/systemd-session.md`.
   Custom units live in `systemd/` (repo is source of truth; enabled by
   absolute path). New machine setup: `scripts/setup-session-services`.
+  Failing units end in `failed` and are reported (start limits + `RestartMode=direct` +
+  `OnFailure=unit-failed-notify@%n.service`, hourly `failed-units-check.timer`; journal and a marker in
+  `~/.local/state/unit-failed/` first, the toast is best effort) — see `docs/systemd-session.md`.
 - Session exit goes through `scripts/session-exit` (stops the session target,
   then `hyprctl dispatch exit`). Never bind bare `hyprctl dispatch exit`.
 - XWayland is disabled globally.

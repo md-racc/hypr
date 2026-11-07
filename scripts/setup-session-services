@@ -8,11 +8,23 @@ repo=$(cd "$(dirname "$0")/.." && pwd)
 # Custom target: linked (no [Install] section), started by autostart.
 systemctl --user link --force "$repo/systemd/hyprland-session.target"
 
+# Failure reporting: the OnFailure= template and the check service are linked (no [Install]); the timer
+# (after login + hourly: failed system and user units) is enabled below.
+systemctl --user link --force \
+  "$repo/systemd/unit-failed-notify@.service" \
+  "$repo/systemd/failed-units-check.service"
+
+# Drop-in for the packaged fnott.service: restart after a compositor crash (systemctl can't link drop-ins).
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/fnott.service.d"
+ln -sfn "$repo/systemd/fnott.service.d/restart.conf" \
+  "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/fnott.service.d/restart.conf"
+
 # Repo units: enable by absolute path so symlinks point into the repo.
 systemctl --user enable --force \
   "$repo/systemd/cliphist-text.service" \
   "$repo/systemd/cliphist-image.service" \
-  "$repo/systemd/nextcloud-client.service"
+  "$repo/systemd/nextcloud-client.service" \
+  "$repo/systemd/failed-units-check.timer"
 
 # No polkit agent on purpose: systemctl/pkexec/udisksctl prompt in the terminal
 # (their built-in pkttyagent fallback); GUI-only admin tools just get "not authorized".

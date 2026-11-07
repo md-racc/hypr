@@ -16,6 +16,7 @@
 - [Special Workspace (Scratchpad)](#special-workspace-scratchpad)
 - [Mouse](#mouse)
 - [Screenshots](#screenshots)
+- [Screen Recording](#screen-recording)
 - [Macros — `again` (zion)](#macros--again-zion)
 - [Power — `SUPER+X`](#power--superx)
 - [Session](#session)
@@ -163,6 +164,24 @@ until a screenshot has been taken this login.
 `SUPER+G` opens the last screenshot in screenie's picker with its layers
 still editable. All tools are available, including annotate, censor,
 filter, OCR and pin. Inside the picker, `y` OCRs the box directly.
+
+---
+
+## Screen Recording
+
+`scripts/record` drives [gpu-screen-recorder](https://git.dec05eba.com/gpu-screen-recorder/about/)
+(H.264 on the GPU: NVENC on zion, VA-API on rocinante, CPU if neither works).
+Files land in `~/documents/videos/`; when one is saved, a notification shows
+the path and a `file://` URI is copied. Any toggle key stops a running
+recording. `record --help` for the rest (`-a` adds desktop audio).
+
+| Key | Action |
+|-----|--------|
+| `SUPER+ALT+Print` | Record an area (screenie's picker, `Enter` starts) / stop |
+| `SUPER+ALT+SHIFT+Print` | Record the active window's box / stop |
+| `SUPER+CTRL+Print` | Record the focused monitor / stop |
+| `SUPER+CTRL+SHIFT+Print` | Replay buffer: first press starts it (last 30 s of the focused monitor, desktop audio, in RAM); each later press saves those 30 s |
+| `SUPER+CTRL+ALT+Print` | Replay buffer off (nothing saved) |
 
 ---
 

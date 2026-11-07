@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+# record — screen recording with gpu-screen-recorder (GPU encode: NVENC on zion,
+# VA-API on Intel; CPU fallback with -fallback-cpu-encoding).
+#
+#   record toggle region   Pick a box with screenie, record it. Run any
+#                          `record toggle ...` again to stop.
+#   record toggle window   Record the active window's current box (the box
+#                          doesn't follow the window if it moves).
+#   record toggle screen   Record the focused monitor.
+#   record replay          Start a 30 s replay buffer (RAM, desktop audio); while
+#                          it runs, the same command saves the last 30 s.
+#   record replay stop     Stop the replay buffer without saving.
+#   record status          Print what is running (exit 0 if anything is).
+#   record -h|--help       This help.
+#
+# Options (before the subcommand): -a|--audio  also record desktop audio in
+# toggle mode (replay always does).
+#
+# Files go to $RECORD_DIR (default ~/documents/videos): rec-<date>_<time>.mp4,
+# and Replay_<date>_<time>.mp4 from the buffer. When a file is saved, a
+# notification shows its path and a file:// URI goes to the clipboard
+# (text/uri-list). That is done by gpu-screen-recorder's -sc hook, which calls
+# this script as `record <file> regular|replay`, so a replay save (SIGUSR1)
+# and a stop (SIGINT) report the same way.
+#
+# State: $XDG_RUNTIME_DIR/record/{toggle,replay}.pid and .log (the recorder's
+# output; the last line is shown if it dies at start).
+#
+# Exit: 0 ok (also: selection cancelled); 1 the recorder failed or is missing;
+# 2 usage.
+set -uo pipefail
+
+usage() { sed -n '2,/^set -uo/{/^set -uo/d;s/^# \{0,1\}//;p}' "$0"; }
+
+GSR=${RECORD_GSR:-gpu-screen-recorder}   # override for testing
+SCREENIE=${SCREENIE:-$HOME/.cargo/bin/screenie}
+dir=${RECORD_DIR:-$HOME/documents/videos}
+state="${XDG_RUNTIME_DIR:?XDG_RUNTIME_DIR unset}/record"
+self=$(readlink -f "$0")
+REPLAY_SECS=30
+
+notify() { notify-send -a record "$@" 2>/dev/null || true; }
+die() { echo "record: $*" >&2; notify -u critical "Recording failed" "$*"; exit 1; }
+
+# $1 is a live (not zombie) gpu-screen-recorder. A recorder that dies right
+# after start stays a zombie child of ours, and kill -0 succeeds on zombies.
+alive() {
+    local stat
+    [[ $1 =~ ^[0-9]+$ && $(cat "/proc/$1/comm" 2>/dev/null) == gpu-screen-rec* ]] || return 1
+    stat=$(cat "/proc/$1/stat" 2>/dev/null) || return 1
+    stat=${stat##*) }
+    [[ ${stat%% *} != Z ]]
+}
+
+# pid from $state/$1.pid if it is a live gpu-screen-recorder, else empty.
+running() {
+    local pid
+    pid=$(cat "$state/$1.pid" 2>/dev/null) || return 1
+    alive "$pid" && { echo "$pid"; return 0; }
+    rm -f "$state/$1.pid"
+    return 1
+}
+
+# Send SIGINT and wait for the file to be finalised (mp4 is rewritten at stop).
+stop() { # $1 = toggle|replay
+    local pid i
+    pid=$(running "$1") || return 1
+    kill -INT "$pid"
+    for ((i = 0; i < 150; i++)); do
+        alive "$pid" || break
+        sleep 0.1
+    done
+    rm -f "$state/$1.pid"
+}
+
+# Start gpu-screen-recorder detached; $1 = toggle|replay, rest = its args.
+start() {
+    local name=$1 pid; shift
+    command -v "$GSR" >/dev/null || die "$GSR is not installed (pacman -S gpu-screen-recorder)"
+    mkdir -p "$state" "$dir" || exit 1
+    # Not a process-group leader (no job control), so setsid execs in place
+    # and $! is the recorder itself.
+    setsid "$GSR" -k h264 -fallback-cpu-encoding yes -sc "$self" "$@" \
+        >"$state/$name.log" 2>&1 </dev/null &
+    pid=$!
+    disown
+    echo "$pid" >"$state/$name.pid"
+    sleep 0.8   # encoder/capture errors surface within the first frames
+    alive "$pid" || { rm -f "$state/$name.pid"; die "$(grep -v '^gsr warning' "$state/$name.log" | tail -n1)"; }
+}
+
+region_of() { # $1 = region|window|screen → gpu-screen-recorder -w value
+    local r
+    case $1 in
+        region)
+            # screenie's slurp format: "X,Y WxH" (global layout coordinates)
+            r=$("$SCREENIE" --select-only --region-format slurp 2>/dev/null) || return 1
+            [[ $r =~ ^(-?[0-9]+),(-?[0-9]+)\ ([0-9]+)x([0-9]+)$ ]] || return 1
+            echo "${BASH_REMATCH[3]}x${BASH_REMATCH[4]}+${BASH_REMATCH[1]}+${BASH_REMATCH[2]}" ;;
+        window)
+            hyprctl activewindow -j | jq -er 'select(.size) | "\(.size[0])x\(.size[1])+\(.at[0])+\(.at[1])"' ;;
+        screen)
+            hyprctl monitors -j | jq -er 'map(select(.focused))[0].name' ;;
+        *) return 2 ;;
+    esac
+}
+
+urlencode() { # RFC 3986 path: keep unreserved chars and /
+    local s=$1 out='' c i
+    for ((i = 0; i < ${#s}; i++)); do
+        c=${s:i:1}
+        case $c in [A-Za-z0-9/._~-]) out+=$c ;; *) printf -v c '%%%02X' "'$c"; out+=$c ;; esac
+    done
+    printf '%s' "$out"
+}
+
+# --- gpu-screen-recorder's -sc hook: record <file> regular|replay ---
+if [[ $# -eq 2 && $1 == /* && $2 =~ ^(regular|replay|screenshot)$ ]]; then
+    uri=file://$(urlencode "$1")
+    printf '%s\n' "$uri" | wl-copy --type text/uri-list 2>/dev/null
+    case $2 in replay) title="Replay saved" ;; *) title="Recording saved" ;; esac
+    notify -i video-x-generic "$title" "${1/#$HOME/\~}"$'\n'"file:// URI copied"
+    exit 0
+fi
+
+audio=()
+while (($#)); do
+    case $1 in
+        -h|--help) usage; exit 0 ;;
+        -a|--audio) audio=(-a default_output); shift ;;
+        *) break ;;
+    esac
+done
+
+case ${1:-} in
+    toggle)
+        mode=${2:-}
+        [[ $mode =~ ^(region|window|screen)$ ]] || { echo "record: toggle region|window|screen" >&2; exit 2; }
+        if running toggle >/dev/null; then
+            stop toggle   # the -sc hook notifies and copies the URI
+            exit 0
+        fi
+        w=$(region_of "$mode") || exit 0   # selection cancelled / no window
+        out="$dir/rec-$(date +%F_%H-%M-%S).mp4"
+        start toggle -w "$w" -f 60 -c mp4 "${audio[@]}" -o "$out"
+        notify -t 2000 "Recording $mode" "Same key stops it"
+        ;;
+    replay)
+        case ${2:-} in
+            "")
+                if pid=$(running replay); then
+                    kill -USR1 "$pid"   # saves; the -sc hook reports the file
+                else
+                    mon=$(region_of screen) || die "no focused monitor"
+                    start replay -w "$mon" -f 60 -c mp4 -r "$REPLAY_SECS" -bm cbr -q 12000 \
+                        -a default_output -o "$dir"
+                    notify -t 3000 "Replay buffer on" "Last ${REPLAY_SECS} s of $mon; same key saves"
+                fi ;;
+            stop)
+                stop replay && notify -t 2000 "Replay buffer off" ;;
+            *) echo "record: replay [stop]" >&2; exit 2 ;;
+        esac
+        ;;
+    status)
+        any=1
+        for n in toggle replay; do
+            if pid=$(running $n); then echo "$n: pid $pid"; any=0; fi
+        done
+        exit $any ;;
+    "") usage >&2; exit 2 ;;
+    *) echo "record: unknown command: $1 (see --help)" >&2; exit 2 ;;
+esac

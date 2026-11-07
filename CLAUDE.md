@@ -101,7 +101,8 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   `dpmsStatus: 0` (the outputs drop and come back ~1s after resume, so one
   early dpms on can be lost). hyprlock logs under `journalctl --user -t hyprlock`.
 - Speed: the laptop background is `grim -l 0` (uncompressed PNG, ~50ms; the
-  default compression level took ~1.25s) and hyprlock `animations` are off.
+  default compression level took ~1.25s). hyprlock's fade in/out is on for
+  both machines (the user's choice, 2026-11-07).
   Keep slow calls (e.g. `fprintd-list`, ~460ms) out of the lock and Enter paths.
 - PAM (both machines): hyprlock uses `/etc/pam.d/hyprlock-nofp` (outside the
   repo, installed by hand), pam_unix only. **Never add pam_faillock or

@@ -57,8 +57,9 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   `sleep:handle-lid-switch` block inhibitor around `lockscreen away-hold`,
   which waits for the lock to be taken and then released (it locks only if
   not already locked), so it works from the desktop and from the lock screen.
-  Displays off. The lid does NOT suspend while away (the user chose this). The
-  block inhibitor also stops hypridle's 15-min `systemctl suspend` (logind
+  Displays off, except on NVIDIA (zion: see "No DPMS off" below). The lid
+  does NOT suspend while away (the user chose this). The block inhibitor also
+  stops hypridle's 15-min `systemctl suspend` (logind
   answers `inhibited`; verified 2026-10-18). Away also starts
   `scripts/hotspot-handoff`: it rescans for up to 2 min and switches wifi to the
   phone's `hotspot` profile as soon as it is visible (no-op at home / without
@@ -98,6 +99,17 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
   type the password blind + Enter. `ignore_empty_input` stops Enter-to-wake
   counting as an attempt.
 - Idle (rocinante): 4:30 dim → 4:45 notify → 5:00 lock → 15:00 suspend.
+  Idle (zion): 14:30 notify → 15:00 lock → 30:00 suspend (no screens-off).
+- **No DPMS off while locked on NVIDIA (zion).** Hyprland 0.57.x +
+  aquamarine 0.16 exits uncleanly ~0.5-1.3s after a DPMS off while hyprlock
+  holds the lock: no core dump, no crash report, Hyprland's log just stops,
+  and start-hyprland says "exit not-cleanly" and restarts it in safe mode
+  (all three zion crashes 2026-11-05/06 were `lockscreen away`'s or
+  hypridle's dpms off; upstream aquamarine#483/#475, omarchy#17872, unfixed
+  as of 2026-11-06). So `lockscreen away` skips its `dpms off` where
+  `/proc/driver/nvidia` exists (`can_blank`), and zion's hypridle has no
+  screens-off listener. relock_prep only recovers *after* the crash; it
+  doesn't prevent it. Re-enable both once a fixed Hyprland/aquamarine ships.
 
 ## Gotchas (hard-won, do not relearn)
 

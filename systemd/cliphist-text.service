@@ -9,7 +9,7 @@ StartLimitBurst=10
 OnFailure=unit-failed-notify@%n.service
 
 [Service]
-ExecStart=/usr/bin/wl-paste --type text --watch cliphist store
+ExecStart=/usr/bin/wl-paste --type text --watch cliphist -max-items 300 store
 # direct: an auto-restart skips the failed state, so OnFailure= fires only when the start limit gives up
 RestartMode=direct
 Restart=on-failure

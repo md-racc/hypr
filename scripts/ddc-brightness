@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# ddc-brightness — step every DDC/CI monitor's brightness (VCP 0x10) together; prints the new average %.
+#
+#   ddc-brightness up|down [N]   ±N (default 10) on each monitor, clamped to 0..max
+#   ddc-brightness -h|--help     print this help
+#
+# For desktops without a backlight device (zion: brightnessctl only finds a keyboard LED). Called by
+# `osd bright`. `ddcutil detect` is slow (~1 s), so the I2C buses are cached in
+# $XDG_RUNTIME_DIR/ddc-brightness.buses, one "bus serial" line per monitor; a failed read re-detects once
+# (buses can move after a hotplug or a driver reload). Monitors are written in parallel with --noverify
+# (each write takes 50-150 ms); one press at a time (flock), so a held key can't pile up writes, and 10%
+# steps keep the EEPROM write count low. Needs /dev/i2c-* access (i2c-dev loaded + uaccess ACL).
+set -uo pipefail
+
+usage() { awk 'NR == 1 { next } !/^#/ { exit } /^#   / { u = 1 } u && /^#$/ { exit } { sub(/^# ?/, ""); print }' "$0"; }
+usage_error() { echo "ddc-brightness: $1" >&2; usage >&2; exit 2; }
+
+case ${1:-} in
+    -h|--help) (($# == 1)) || usage_error "unexpected argument '$2'"; usage; exit 0 ;;
+    up|down) ;;
+    "") usage_error "missing direction" ;;
+    *) usage_error "unknown direction '$1'" ;;
+esac
+(($# <= 2)) || usage_error "too many arguments"
+dir=$1 step=${2:-10}
+[[ $step =~ ^[0-9]+$ && $step -ge 1 && $step -le 100 ]] || usage_error "bad step '$step'"
+command -v ddcutil >/dev/null || { echo "ddc-brightness: ddcutil is not installed" >&2; exit 1; }
+
+RUN=${XDG_RUNTIME_DIR:-/run/user/$UID}
+CACHE=$RUN/ddc-brightness.buses
+exec 8>"$RUN/ddc-brightness.lock"
+flock 8
+
+detect() {
+    timeout 15 ddcutil detect --terse 2>/dev/null | awk '
+        /^Display/ { bus = ""; sn = "" }
+        /I2C bus:/ { bus = $NF; sub(/.*i2c-/, "", bus) }
+        /Monitor:/ { sn = $NF; n = split(sn, a, ":"); sn = a[n]; if (bus != "") print bus, sn }
+    ' >"$CACHE.tmp" && [[ -s $CACHE.tmp ]] && mv "$CACHE.tmp" "$CACHE"
+}
+
+# step_one <bus> — read, clamp, write; prints the new percent
+step_one() {
+    local cur max new
+    read -r cur max < <(timeout 5 ddcutil --bus "$1" getvcp 10 --brief 2>/dev/null | awk '{ print $4, $5 }')
+    [[ $cur =~ ^[0-9]+$ && $max =~ ^[0-9]+$ && $max -gt 0 ]] || return 1
+    if [[ $dir == up ]]; then new=$((cur + step * max / 100)); else new=$((cur - step * max / 100)); fi
+    ((new > max)) && new=$max
+    ((new < 0)) && new=0
+    ((new == cur)) || timeout 5 ddcutil --bus "$1" --noverify setvcp 10 "$new" >/dev/null 2>&1 || return 1
+    echo $((new * 100 / max))
+}
+
+run_all() {
+    local bus _ i=0 pids=() out=() total=0 n=0 f
+    [[ -s $CACHE ]] || detect || return 1
+    while read -r bus _; do
+        f=$RUN/ddc-brightness.$i
+        step_one "$bus" >"$f" & pids+=($!); out+=("$f"); i=$((i + 1))
+    done <"$CACHE"
+    for i in "${!pids[@]}"; do
+        if wait "${pids[$i]}" && read -r f <"${out[$i]}"; then total=$((total + f)) n=$((n + 1)); fi
+        rm -f "${out[$i]}"
+    done
+    # only "nobody answered" re-detects: a retry after a partial write would step that monitor twice
+    ((n)) || return 1
+    echo $((total / n))
+}
+
+run_all >"$RUN/ddc-brightness.out" 2>/dev/null || { detect && run_all >"$RUN/ddc-brightness.out"; } || {
+    echo "ddc-brightness: no monitor answered over DDC/CI (ddcutil detect)" >&2; rm -f "$RUN/ddc-brightness.out"; exit 1; }
+cat "$RUN/ddc-brightness.out"; rm -f "$RUN/ddc-brightness.out"

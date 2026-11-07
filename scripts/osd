@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# osd — change volume / mic / brightness and show the level in one notification that updates in place.
+#
+#   osd vol up|down|mute    default sink ±5% (capped at 100%) or mute toggle
+#   osd mic mute            default source mute toggle
+#   osd bright up|down [N]  displays ±N% (default 10): the backlight (brightnessctl) where there is one,
+#                           else the monitors over DDC/CI (scripts/ddc-brightness, zion)
+#   osd -h|--help           print this help
+#
+# The bubble is urgency low, app "osd", 1.2 s, with an int:value hint (fnott draws a progress bar) and
+# replaces the previous one (id in $XDG_RUNTIME_DIR/osd.nid). The XF86 binds are `locked`: nothing here
+# needs the unlocked session, and a failed notification never fails the change itself.
+set -uo pipefail
+
+usage() { awk 'NR == 1 { next } !/^#/ { exit } /^#   / { u = 1 } u && /^#$/ { exit } { sub(/^# ?/, ""); print }' "$0"; }
+usage_error() { echo "osd: $1" >&2; usage >&2; exit 2; }
+
+RUN=${XDG_RUNTIME_DIR:-/run/user/$UID}
+NID=$RUN/osd.nid
+HERE=$(cd "$(dirname "$0")" && pwd)
+
+# show <summary> <percent> — one bubble, replaced in place
+show() {
+    command -v notify-send >/dev/null || return 0
+    local id
+    id=$(cat "$NID" 2>/dev/null); [[ $id =~ ^[0-9]+$ ]] || id=0
+    id=$(timeout 2 notify-send -a osd -u low -t 1200 -h "int:value:$2" -r "$id" -p "$1" 2>/dev/null) &&
+        [[ $id =~ ^[0-9]+$ ]] && printf '%s\n' "$id" >"$NID"
+    return 0
+}
+
+# wp_show <@target> <label> — read wpctl's level ("Volume: 0.70 [MUTED]") and show it
+wp_show() {
+    local out vol pct
+    out=$(wpctl get-volume "$1" 2>/dev/null) || return 0
+    vol=$(awk '{print $2}' <<<"$out")
+    pct=$(awk -v v="$vol" 'BEGIN { printf "%d", v * 100 + 0.5 }')
+    if [[ $out == *MUTED* ]]; then show "$2 muted" "$pct"; else show "$2 $pct%" "$pct"; fi
+}
+
+case ${1:-}:${2:-} in
+    vol:up)    (($# == 2)) || usage_error "too many arguments"
+               wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+ && wp_show @DEFAULT_AUDIO_SINK@ Volume ;;
+    vol:down)  (($# == 2)) || usage_error "too many arguments"
+               wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && wp_show @DEFAULT_AUDIO_SINK@ Volume ;;
+    vol:mute)  (($# == 2)) || usage_error "too many arguments"
+               wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && wp_show @DEFAULT_AUDIO_SINK@ Volume ;;
+    mic:mute)  (($# == 2)) || usage_error "too many arguments"
+               wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && wp_show @DEFAULT_AUDIO_SOURCE@ Mic ;;
+    bright:up|bright:down)
+        (($# <= 3)) || usage_error "too many arguments"
+        step=${3:-10}; [[ $step =~ ^[0-9]+$ && $step -ge 1 && $step -le 100 ]] || usage_error "bad step '$step'"
+        if compgen -G '/sys/class/backlight/*' >/dev/null; then
+            if [[ $2 == up ]]; then arg=+$step%; else arg=$step%-; fi
+            # -m: "device,class,current,percent%,max"
+            pct=$(brightnessctl -m set "$arg" 2>/dev/null | awk -F, '{ sub(/%/, "", $4); print $4 }')
+        elif command -v ddcutil >/dev/null; then
+            pct=$("$HERE/ddc-brightness" "$2" "$step")
+        else
+            echo "osd: no backlight and no ddcutil" >&2; exit 1
+        fi
+        [[ $pct =~ ^[0-9]+$ ]] && show "Brightness $pct%" "$pct" ;;
+    -h:|--help:) usage ;;
+    :)  usage_error "missing arguments" ;;
+    *)  usage_error "unknown command '$*'" ;;
+esac
+exit 0

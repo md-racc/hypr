@@ -1,7 +1,7 @@
 [Unit]
 Description=Nextcloud sync (inotify + periodic nextcloudcmd)
 PartOf=graphical-session.target
-After=graphical-session.target network-online.target
+After=graphical-session.target
 # A missing env file once failed 40k times in a week without ever reaching "failed" (RestartSec=5 escapes
 # the default 5-in-10s limit): give up after 10 starts in 15 min and say so.
 StartLimitIntervalSec=15min

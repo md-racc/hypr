@@ -3,7 +3,11 @@
 # See docs/systemd-session.md. Safe to rerun after adding units.
 set -euo pipefail
 
-repo=$(cd "$(dirname "$0")/.." && pwd)
+repo=${XDG_CONFIG_HOME:-$HOME/.config}/hypr
+# Everything below links into $repo, and the units hardcode %h/.config/hypr: run from a worktree, the
+# links would point into it and break when it is removed.
+[[ $(cd "$(dirname "$0")/.." && pwd -P) == "$(cd "$repo" && pwd -P)" ]] ||
+    { echo "setup-session-services: run it from $repo, not a worktree" >&2; exit 1; }
 
 # Custom target: linked (no [Install] section), started by autostart.
 systemctl --user link --force "$repo/systemd/hyprland-session.target"
@@ -40,6 +44,10 @@ systemctl --user enable fnott.service hypridle.service
 
 if command -v hyprsunset >/dev/null; then
     systemctl --user enable hyprsunset.service
+    # Drop-in: slower restarts, so a compositor crash can't exhaust the start limit.
+    mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/hyprsunset.service.d"
+    ln -sfn "$repo/systemd/hyprsunset.service.d/restart.conf" \
+      "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/hyprsunset.service.d/restart.conf"
 else
     echo "WARNING: hyprsunset not installed — skipping (sudo pacman -S hyprsunset)" >&2
 fi

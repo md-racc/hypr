@@ -1,7 +1,8 @@
 # systemd-managed session daemons
 
 Long-running daemons run as systemd user units bound to
-`graphical-session.target` instead of raw `exec-once` lines. Supervision
+`graphical-session.target` instead of being started from autostart
+(`hl.on("hyprland.start", …)` in `conf/machine/autostart.lua`). Supervision
 (`Restart=on-failure`), `journalctl --user -u <unit>` logs, and clean
 shutdown ordering — without adopting uwsm. The launcher stays
 `start-hyprland`.
@@ -12,8 +13,10 @@ shutdown ordering — without adopting uwsm. The launcher stays
    `dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP DISPLAY && { systemctl --user stop xdg-desktop-portal …; systemctl --user start hyprland-session.target; }`
    The first half pushes the Wayland env into the systemd user manager
    (units have `ConditionEnvironment=WAYLAND_DISPLAY`); the `&&` matters —
-   both halves must run in one `exec-once` so the import completes before
-   the target starts.
+   both halves must run in one `hl.exec_cmd` so the import completes before
+   the target starts. (Hyprland 0.57 also imports `WAYLAND_DISPLAY`,
+   `XDG_CURRENT_DESKTOP` and `HYPRLAND_INSTANCE_SIGNATURE` itself, safe mode
+   included; ours is kept for the ordering guarantee.)
 2. `systemd/hyprland-session.target` (this repo) has
    `BindsTo=graphical-session.target`, so starting it pulls
    `graphical-session.target` up, which starts every enabled unit that is
@@ -35,9 +38,10 @@ shutdown ordering — without adopting uwsm. The launcher stays
 | unit-failed-notify@.service | `systemd/` | `OnFailure=` target: journal line (`journalctl --user -t unit-failed`), marker in `~/.local/state/unit-failed/`, then a best-effort critical toast (`scripts/unit-failed-notify`) |
 | failed-units-check.timer/.service | `systemd/` | 2 min after login + hourly: every failed system and user unit, reported once per failure; markers of recovered units are removed |
 | fnott.service.d/restart.conf | `systemd/` (drop-in, symlinked) | restart fnott after a compositor crash |
+| hyprsunset.service.d/restart.conf | `systemd/` (drop-in, symlinked) | restart hyprsunset every 2 s (not 100 ms) after a compositor crash, so the start limit holds |
 | hypridle.service.d/crash-logs.conf | `systemd/` (drop-in, symlinked) | `ExecStartPre`: `scripts/hypr-crash-logs` saves a crashed Hyprland's log (`/run` only) to `~/.local/state/hypr-crashes/` |
 
-**Failures are loud, not loops.** nextcloud-client, cliphist-* and fnott (drop-in) use `RestartMode=direct`
+**Failures are loud, not loops.** nextcloud-client, cliphist-*, fnott and hyprsunset (drop-ins) use `RestartMode=direct`
 (an auto-restart skips the failed state, so `OnFailure=` doesn't fire per retry) with a start limit
 (nextcloud: 10 in 15 min; the others: 10 in 2 min) and `OnFailure=unit-failed-notify@%n.service`.
 Before this, a missing env file failed nextcloud-client 40k times in a week (`RestartSec=5` escapes the
@@ -56,23 +60,21 @@ handles roci's fingerprint fine (empty Enter → sensor). GUI-only admin tools
 get "not authorized". Decided 2026-10-02 after a fuzzel agent couldn't submit
 an empty field for the fingerprint path.
 
-Still plain `exec-once`: eww (per-machine window set), wallpaper-restore
-(one-shot), gnome-keyring (dbus-activated anyway).
+Still started from autostart: eww (per-machine window set; zion opens both
+windows with one `eww open-many`), wallpaper-restore (one-shot),
+gnome-keyring (dbus-activated anyway).
 
 ## New machine / laptop runbook
 
 ```sh
 cd ~/.config/hypr && git pull
 sudo pacman -S --needed hyprsunset   # if not yet installed
-./scripts/setup-session-services     # links + enables everything, idempotent
+./scripts/setup-session-services     # links + enables everything, idempotent; refuses to run from a worktree
 ```
 
 Then either relogin, or take over live without one:
 
 ```sh
-# stop the legacy exec-once processes
-pkill -x hypridle; pkill -x hyprsunset; pkill -x fnott
-pkill -f "wl-paste --type"; pkill -x nextcloud
 # import env + start the target (same line autostart runs)
 dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP DISPLAY
 systemctl --user start hyprland-session.target

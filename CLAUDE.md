@@ -1,5 +1,8 @@
 # Hyprland config
 
+## Agent rules
+Verify: `scripts/verify-lua-config zion && scripts/verify-lua-config rocinante`
+
 Multi-machine Hyprland configuration, in Lua. `hyprland.lua` is only `require`
 lines; everything lives under `conf/*.lua`. hypridle, hyprlock, and hyprsunset
 have no Lua config and stay hyprlang `.conf`.

@@ -211,4 +211,8 @@ One entry point: `scripts/lockscreen` (read its header before touching any of th
 - zion's journal is persistent again since 2026-09-26 (`/var/log/journal`;
   2025-11-12 to 2026-09-26 is a gap). `journalctl -b -N` works for past boots.
   Entries from the last ~30s before a hard reset can still be lost.
+- zion sets `__NV_DISABLE_EXPLICIT_SYNC=1` (conf/machines/zion/env.lua): NVIDIA EGL
+  clients (Firefox, kitty) wedged and stopped responding after resume or unlock
+  (NVIDIA/egl-wayland2#59). It reaches apps launched from Hyprland, not systemd
+  units (hyprlock via hypridle). Remove it once upstream fixes #59.
 - Known-broken: nothing.
